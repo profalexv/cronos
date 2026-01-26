@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1</title>
+    <title>cronos@alexandre.pro.br v1.31</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -19,6 +19,13 @@
         
         input, select { background: #333; color: white; border: 1px solid #555; padding: 8px; border-radius: 4px; }
         
+        /* Input de Título Global Personalizado */
+        #global-titulo {
+            background: transparent; border: none; font-size: 1.8rem; font-weight: bold; 
+            color: #00d2ff; width: 100%; padding: 5px; margin: 0;
+        }
+        #global-titulo:focus { outline: 1px dashed #555; background: rgba(255,255,255,0.05); }
+
         /* Botões de Arquivo */
         .btn-file { background: #444; border: 1px solid #666; color: #fff; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; }
         .btn-file:hover { background: #555; border-color: #888; }
@@ -40,7 +47,7 @@
         .col-intervalo { background: rgba(255, 170, 0, 0.15); padding: 5px; border-radius: 4px; display: flex; gap: 5px; border: 1px dashed #666; }
         .hidden { display: none !important; }
 
-        /* REGRA INTELIGENTE: Esconde o intervalo da última linha da lista */
+        /* REGRA INTELIGENTE: Esconde o intervalo da última linha */
         #lista-fases .fase-row:last-child .col-intervalo {
             visibility: hidden; pointer-events: none;
         }
@@ -95,16 +102,20 @@
     <input type="file" id="file-input" style="display: none;" accept=".json" onchange="carregarArquivo(this)">
 
     <div id="config-screen">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h2 style="margin:0; color:#00d2ff;">Cronometro Escola Sabatina Viva v1</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:15px;">
+            <div style="display:flex; align-items:center; gap:10px; flex-grow:1; margin-right:20px;">
+                <input type="text" id="global-titulo" value="Escola Sabatina Viva" data-tooltip="Clique para editar o título do evento.">
+                <input type="color" id="global-cor-titulo" value="#00d2ff" style="width:40px; height:35px; border:none;" data-tooltip="Alterar cor do título.">
+            </div>
+
             <div style="display:flex; gap:10px;">
-                <button class="btn-file" onclick="salvarConfiguracao()" data-tooltip="Baixa um arquivo com a programação atual para você abrir depois.">💾 Salvar Config</button>
-                <button class="btn-file" onclick="document.getElementById('file-input').click()" data-tooltip="Carrega um arquivo de programação salvo anteriormente.">📂 Abrir Config</button>
+                <button class="btn-file" onclick="salvarConfiguracao()" data-tooltip="Salvar a programação atual (incluindo título) em arquivo.">💾 Salvar</button>
+                <button class="btn-file" onclick="document.getElementById('file-input').click()" data-tooltip="Carregar uma programação salva.">📂 Abrir</button>
             </div>
         </div>
         
         <div class="painel-top">
-            <div class="campo" data-tooltip="Início da programação. Se já passou deste horário, o sistema ajusta automaticamente.">
+            <div class="campo" data-tooltip="Início da programação.">
                 <label>Início Planejado</label>
                 <input type="time" id="hora-inicio">
             </div>
@@ -127,7 +138,7 @@
     </div>
 
     <div id="display-screen">
-        <button id="btn-sair" onclick="location.reload()" title="Sair" data-tooltip="Voltar para edição.">✕ Sair</button>
+        <button id="btn-sair" onclick="encerrar()" title="Sair" data-tooltip="Sair para configuração">✕</button>
         <div class="overlay"></div>
         <div id="relogio-real" data-tooltip="Hora Atual">--:--</div>
 
@@ -147,8 +158,8 @@
                 <button class="btn-ctrl" onclick="acaoPausar()" data-tooltip="Pausar cronômetro">⏸ Pausar</button>
                 <button class="btn-ctrl" onclick="acaoContinuar()" data-tooltip="Continuar cronômetro">▶ Continuar</button>
                 <button class="btn-ctrl" onclick="acaoReiniciarFase()" style="border-color:#ffaa00; color:#ffaa00;" data-tooltip="Reiniciar etapa atual">↺ Reiniciar Fase</button>
-                <button class="btn-ctrl" onclick="acaoAvançar()" style="border-color:#00d2ff; color:#00d2ff;" data-tooltip="Pula imediatamente para a próxima parte da programação.">⏭ Avançar</button>
-                <button class="btn-ctrl" onclick="encerrar()" style="border-color:#ff4444; color:#ff4444;" data-tooltip="Encerra a apresentação imediatamente e vai para a tela final.">⏹ Encerrar</button>
+                <button class="btn-ctrl" onclick="acaoAvançar()" style="border-color:#00d2ff; color:#00d2ff;" data-tooltip="Pular para a próxima etapa (ignora espera).">⏭ Avançar</button>
+                <button class="btn-ctrl" onclick="encerrar()" style="border-color:#ff4444; color:#ff4444;" data-tooltip="Encerrar apresentação imediatamente.">⏹ Encerrar</button>
             </div>
         </div>
     </div>
@@ -158,18 +169,30 @@
             <h2 style="color:#ff4444; margin-top:0;">⚠️ Atraso Crítico</h2>
             <p>O tempo acabou. Como deseja proceder?</p>
             <div class="modal-opts">
-                <button class="btn-modal" onclick="resolverConflito(1)" data-tooltip="Reduz tempo de todas as etapas restantes"><b>1. Reduzir Todas</b></button>
-                <button class="btn-modal" onclick="resolverConflito(2)" data-tooltip="Reduz tempo apenas da última etapa"><b>2. Reduzir Última</b></button>
-                <button class="btn-modal" onclick="resolverConflito(3)" data-tooltip="Ignora o horário final"><b>3. Ignorar Prazo</b></button>
-                <button class="btn-modal" onclick="resolverConflito(4)" data-tooltip="Define novo horário de término"><b>4. Alterar Horário Final</b></button>
+                <button class="btn-modal" onclick="resolverConflito(1)"><b>1. Reduzir Todas</b></button>
+                <button class="btn-modal" onclick="resolverConflito(2)"><b>2. Reduzir Última</b></button>
+                <button class="btn-modal" onclick="resolverConflito(3)"><b>3. Ignorar Prazo</b></button>
+                <button class="btn-modal" onclick="resolverConflito(4)"><b>4. Alterar Horário Final</b></button>
             </div>
         </div>
     </div>
 
     <script>
+        // --- ATUALIZA COR DO TÍTULO EM TEMPO REAL ---
+        document.getElementById('global-cor-titulo').addEventListener('input', function(e) {
+            document.getElementById('global-titulo').style.color = e.target.value;
+        });
+
         // --- SISTEMA DE ARQUIVOS ---
         function salvarConfiguracao() {
-            const dados = { inicio: document.getElementById('hora-inicio').value, fim: document.getElementById('hora-fim').value, intervalosAtivos: document.getElementById('chk-intervalos').checked, fases: [] };
+            const dados = { 
+                tituloGlobal: document.getElementById('global-titulo').value,
+                corGlobal: document.getElementById('global-cor-titulo').value,
+                inicio: document.getElementById('hora-inicio').value, 
+                fim: document.getElementById('hora-fim').value, 
+                intervalosAtivos: document.getElementById('chk-intervalos').checked, 
+                fases: [] 
+            };
             document.querySelectorAll('.fase-row').forEach(row => {
                 dados.fases.push({
                     titulo: row.querySelector('.inp-titulo').value, minutos: row.querySelector('.inp-tempo').value, redutivel: row.querySelector('.inp-redutivel').checked,
@@ -191,6 +214,11 @@
         }
 
         function aplicarConfiguracao(d) {
+            if(d.tituloGlobal) {
+                document.getElementById('global-titulo').value = d.tituloGlobal;
+                document.getElementById('global-cor-titulo').value = d.corGlobal || "#00d2ff";
+                document.getElementById('global-titulo').style.color = d.corGlobal || "#00d2ff";
+            }
             document.getElementById('hora-inicio').value = d.inicio; document.getElementById('hora-fim').value = d.fim;
             document.getElementById('chk-intervalos').checked = d.intervalosAtivos; toggleIntervalosGlobais();
             document.getElementById('lista-fases').innerHTML = "";
@@ -199,21 +227,29 @@
                 const l = document.querySelectorAll('.fase-row'); const last = l[l.length-1];
                 if(last){ last.querySelector('.inp-int-tempo').value=f.intTempo; last.querySelector('.inp-int-manual').checked=f.intManual; last.querySelector('.inp-aviso').value=f.aviso; }
             });
-            alert("Configuração carregada! (Nota: Selecione as imagens novamente)");
+            alert("Configuração carregada!");
         }
 
         // --- TOOLTIPS 3s ---
         const tooltip = document.getElementById('custom-tooltip');
-        let tooltipTimeout, mouseX=0, mouseY=0;
+        let tooltipTimeout;
         document.addEventListener('mousemove', e => {
-            mouseX = e.clientX; mouseY = e.clientY;
-            if(tooltip.style.display==='block'){ tooltip.style.top=(mouseY+15)+'px'; tooltip.style.left=(mouseX+15)+'px'; }
+            if(tooltip.style.display==='block'){ tooltip.style.top=(e.clientY+15)+'px'; tooltip.style.left=(e.clientX+15)+'px'; }
         });
         document.addEventListener('mouseover', e => {
             const t = e.target.closest('[data-tooltip]');
-            if(t){ tooltipTimeout = setTimeout(()=>{ tooltip.innerText=t.getAttribute('data-tooltip'); tooltip.style.top=(mouseY+15)+'px'; tooltip.style.left=(mouseX+15)+'px'; tooltip.style.display='block'; }, 3000); }
+            if(t){
+                tooltipTimeout = setTimeout(()=>{
+                    tooltip.innerText = t.getAttribute('data-tooltip');
+                    tooltip.style.top = (e.clientY+15)+'px'; tooltip.style.left=(e.clientX+15)+'px';
+                    tooltip.style.display = 'block';
+                }, 3000);
+            }
         });
-        document.addEventListener('mouseout', e => { const t=e.target.closest('[data-tooltip]'); if(t){ clearTimeout(tooltipTimeout); tooltip.style.display='none'; }});
+        document.addEventListener('mouseout', e => {
+            const t = e.target.closest('[data-tooltip]');
+            if(t){ clearTimeout(tooltipTimeout); tooltip.style.display='none'; }
+        });
 
         // --- CORE ---
         let cronograma=[], indexAtual=0, tempoRestante=0, estado="PARADO", intervaloTimer=null, dataFimGlobal=null, emIntervalo=false;
@@ -243,15 +279,15 @@
                 <button class="btn-x" onclick="this.parentElement.remove()" data-tooltip="Remover">X</button>
                 <div class="campo" style="flex:2; min-width:150px;" data-tooltip="Nome da parte"><label>Título</label><input type="text" class="inp-titulo" value="${tit}"></div>
                 <div class="campo" style="width:70px;" data-tooltip="Duração (min)"><label>Min</label><input type="number" class="inp-tempo" value="${min}" min="1"></div>
-                <div class="campo" style="align-items:center;" data-tooltip="Pode reduzir tempo se atrasar?"><label>Redutível?</label><input type="checkbox" class="inp-redutivel" ${red?'checked':''} style="width:20px; height:20px;"></div>
+                <div class="campo" style="align-items:center;" data-tooltip="Redutível?"><label>Redut?</label><input type="checkbox" class="inp-redutivel" ${red?'checked':''} style="width:20px; height:20px;"></div>
                 <div class="col-intervalo ${hide}">
-                    <div class="campo" style="width:60px;" data-tooltip="Tempo de intervalo"><label>Pausa(s)</label><input type="number" class="inp-int-tempo" value="30"></div>
+                    <div class="campo" style="width:60px;" data-tooltip="Intervalo (s)"><label>Pausa</label><input type="number" class="inp-int-tempo" value="30"></div>
                     <div class="campo" style="align-items:center;" data-tooltip="Esperar clique?"><label>Clique?</label><input type="checkbox" class="inp-int-manual" style="width:20px; height:20px;"></div>
                 </div>
-                <div class="campo" style="width:60px;" data-tooltip="Aviso final (seg)"><label>Aviso(s)</label><input type="number" class="inp-aviso" value="30"></div>
-                <div class="campo" data-tooltip="Cor de Fundo"><label>Bg</label><input type="color" class="inp-bg" value="${bg}"></div>
-                <div class="campo" data-tooltip="Cor do Texto"><label>Txt</label><input type="color" class="inp-txt" value="${txt}"></div>
-                <div class="campo" style="flex:1;" data-tooltip="Imagem de fundo"><label>Imagem</label><input type="file" class="inp-img" accept="image/*"></div>
+                <div class="campo" style="width:60px;" data-tooltip="Aviso (s)"><label>Aviso</label><input type="number" class="inp-aviso" value="30"></div>
+                <div class="campo" data-tooltip="Cor Fundo"><label>Bg</label><input type="color" class="inp-bg" value="${bg}"></div>
+                <div class="campo" data-tooltip="Cor Texto"><label>Txt</label><input type="color" class="inp-txt" value="${txt}"></div>
+                <div class="campo" style="flex:1;" data-tooltip="Imagem"><label>Img</label><input type="file" class="inp-img" accept="image/*"></div>
             `;
             c.appendChild(div);
         }
@@ -272,11 +308,43 @@
                     aviso: parseInt(r.querySelector('.inp-aviso').value), bg: r.querySelector('.inp-bg').value, txt: r.querySelector('.inp-txt').value, img: url
                 });
             });
-            const plan = cronograma.reduce((a,b)=>a+b.minutosOrig,0); const disp = (dataFimGlobal - now)/60000;
-            if(plan > disp || now > dIni) if(!calcularAjuste(now)) return;
-            document.getElementById('config-screen').style.display='none'; document.getElementById('display-screen').style.display='flex';
+
+            document.getElementById('config-screen').style.display='none'; 
+            document.getElementById('display-screen').style.display='flex';
             if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{});
-            indexAtual=0; rodarFase(0);
+
+            // Lógica de Espera (Futuro)
+            if(now < dIni) {
+                iniciarEspera(dIni);
+            } else {
+                // Lógica de Atraso (Passado)
+                const plan = cronograma.reduce((a,b)=>a+b.minutosOrig,0);
+                const disp = (dataFimGlobal - now)/60000;
+                if(plan > disp) if(!calcularAjuste(now)) return;
+                indexAtual=0; rodarFase(0);
+            }
+        }
+
+        function iniciarEspera(target) {
+            estado = "WAITING";
+            document.getElementById('titulo-fase').innerText = "AGUARDANDO INÍCIO";
+            document.getElementById('titulo-fase').style.color = "#00d2ff";
+            document.getElementById('timer-principal').style.color = "#ffffff";
+            document.getElementById('display-screen').style.backgroundImage = 'none';
+            document.getElementById('display-screen').style.backgroundColor = '#111';
+            
+            intervaloTimer = setInterval(() => {
+                const now = new Date();
+                const diff = (target - now) / 1000;
+                if (diff <= 0) {
+                    clearInterval(intervaloTimer);
+                    tocarBip();
+                    if(calcularAjuste(new Date())) { indexAtual = 0; rodarFase(0); }
+                } else {
+                    const m = Math.floor(diff / 60); const s = Math.floor(diff % 60);
+                    document.getElementById('timer-principal').innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                }
+            }, 1000);
         }
 
         function rodarFase(idx){
@@ -317,10 +385,32 @@
             if(!isTempo) tm.classList.add('hidden');
         }
 
-        function acaoPausar(){ if(estado==="RODANDO"||estado==="INTERVALO"){ estado="PAUSADO"; clearInterval(intervaloTimer); document.getElementById('timer-principal').style.opacity="0.5"; }}
-        function acaoContinuar(){ if(estado==="PAUSADO"){ if(!document.getElementById('btn-intervalo-manual').classList.contains('hidden')) return; if(!calcularAjuste(new Date())) return; estado=emIntervalo?"INTERVALO":"RODANDO"; document.getElementById('timer-principal').style.opacity="1"; intervaloTimer=setInterval(tick,1000); }}
+        function acaoPausar(){ if(estado==="RODANDO"||estado==="INTERVALO"||estado==="WAITING"){ estado="PAUSADO"; clearInterval(intervaloTimer); document.getElementById('timer-principal').style.opacity="0.5"; }}
+        function acaoContinuar(){ 
+            if(estado==="PAUSADO"){ 
+                if(document.getElementById('titulo-fase').innerText === "AGUARDANDO INÍCIO") {
+                    const hI = document.getElementById('hora-inicio').value;
+                    const dIni = montarData(hI, new Date());
+                    iniciarEspera(dIni);
+                    document.getElementById('timer-principal').style.opacity="1";
+                    return;
+                }
+                if(!document.getElementById('btn-intervalo-manual').classList.contains('hidden')) return; 
+                if(!calcularAjuste(new Date())) return; 
+                estado=emIntervalo?"INTERVALO":"RODANDO"; document.getElementById('timer-principal').style.opacity="1"; intervaloTimer=setInterval(tick,1000); 
+            }
+        }
         function acaoReiniciarFase(){ tempoRestante=cronograma[indexAtual].segundosFinais; if(calcularAjuste(new Date())){ const m=Math.floor(tempoRestante/60), s=tempoRestante%60; document.getElementById('timer-principal').innerText=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; if(estado!=="RODANDO") acaoContinuar(); }}
-        function acaoAvançar(){ rodarFase(indexAtual + 1); }
+        
+        function acaoAvançar(){ 
+            if(estado === "WAITING" || document.getElementById('titulo-fase').innerText === "AGUARDANDO INÍCIO") {
+                clearInterval(intervaloTimer);
+                indexAtual = 0;
+                rodarFase(0);
+            } else {
+                rodarFase(indexAtual + 1); 
+            }
+        }
 
         function calcularAjuste(now){
             if(indexAtual>=cronograma.length-1) return true;
@@ -359,7 +449,16 @@
         function montarData(s,ref){ const [h,m]=s.split(':'); const d=new Date(ref); d.setHours(parseInt(h),parseInt(m),0,0); return d; }
         function notificarAjuste(m){ const el=document.getElementById('txt-status'); el.innerText=m; el.style.color="#ffaa00"; }
         function tocarBip(){ try{ const c=new(window.AudioContext||window.webkitAudioContext)(); const o=c.createOscillator(); o.type='sine'; o.frequency.value=880; o.connect(c.destination); o.start(); o.stop(c.currentTime+0.5); }catch(e){} }
-        function encerrar(){ const d=document.getElementById('display-screen'); d.style.background="#000"; document.getElementById('titulo-fase').innerText="ENCERRADO"; document.getElementById('timer-principal').innerText="FIM"; document.querySelector('.controles-play').style.display='none'; }
+        function encerrar(){ 
+            if(intervaloTimer) clearInterval(intervaloTimer);
+            if(document.getElementById('config-screen').style.display !== 'none') return;
+            const d=document.getElementById('display-screen'); d.style.background="#000"; d.style.backgroundImage='none';
+            document.getElementById('titulo-fase').innerText="ENCERRADO"; 
+            document.getElementById('timer-principal').innerText="FIM"; 
+            document.querySelector('.controles-play').style.display='none';
+            document.getElementById('btn-intervalo-manual').classList.add('hidden');
+            document.getElementById('timer-principal').classList.remove('hidden');
+        }
     </script>
 </body>
 </html>
