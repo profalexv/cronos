@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.43</title>
+    <title>cronos@alexandre.pro.br v1.44</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -48,14 +48,15 @@
             border-radius: 6px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; 
         }
         
+        /* Colunas condicionais */
         .col-intervalo { background: rgba(255, 170, 0, 0.15); padding: 5px; border-radius: 4px; display: flex; gap: 5px; border: 1px dashed #666; }
         .col-estouro { background: rgba(255, 68, 68, 0.15); padding: 5px; border-radius: 4px; display: flex; gap: 5px; border: 1px dashed #666; }
+        .col-audio { background: rgba(0, 210, 255, 0.15); padding: 5px; border-radius: 4px; display: flex; gap: 5px; border: 1px dashed #666; }
         
         .hidden { display: none !important; }
 
-        /* REGRA: Esconde controles de intervalo na última linha */
+        /* Regras de ocultação da última linha */
         #lista-fases .fase-row:last-child .col-intervalo { visibility: hidden; pointer-events: none; }
-        /* REGRA NOVA: Esconde box de estouro na última linha (pois é obrigatório) */
         #lista-fases .fase-row:last-child .col-estouro { display: none; }
 
         /* Botões Ação */
@@ -114,32 +115,26 @@
         }
 
         /* --- ANIMAÇÕES --- */
-        
-        /* 1. Piscar Suave (Alerta positivo) */
         .piscando-cor { animation: pulse-opacity 1s infinite; }
         @keyframes pulse-opacity {
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.6; transform: scale(1.02); }
         }
 
-        /* 2. Piscar Vermelho (Estouro 0 a -60s) */
         .piscando-vermelho { color: #ff4444 !important; animation: pulse-red 1s infinite; }
         @keyframes pulse-red { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); text-shadow: 0 0 20px red; } }
         
-        /* 3. Piscar Alternado (Estouro > 60s) */
         .piscando-alerta-maximo { animation: flash-timer-panic 0.5s infinite; }
         @keyframes flash-timer-panic {
             0%, 49% { color: #ff4444; transform: scale(1.05); }
             50%, 100% { color: var(--txt-color); transform: scale(1); }
         }
 
-        /* 4. Piscar Fundo Crítico */
         .bg-panic { animation: bg-flash 1s infinite; }
         @keyframes bg-flash { 
             0%, 100% { background-color: #300000; } 50% { background-color: #aa0000; } 
         }
 
-        /* 5. Tarja FIM Strobe */
         @keyframes flash-strobe { 0%, 15% { opacity: 1; } 16%, 100% { opacity: 0; } }
         @keyframes flash-strobe-panic { 
             0%, 15% { color: #ff4444; opacity: 1; }
@@ -148,10 +143,10 @@
             66%, 100% { opacity: 0; }
         }
 
-        .anim-slow { animation: flash-strobe 2.5s infinite; } /* -2 min */
-        .anim-med { animation: flash-strobe 1.5s infinite; }  /* -3 min */
-        .anim-fast { animation: flash-strobe 0.5s infinite; } /* -4 min */
-        .anim-panic { animation: flash-strobe-panic 0.4s infinite; } /* -5 min */
+        .anim-slow { animation: flash-strobe 2.5s infinite; }
+        .anim-med { animation: flash-strobe 1.5s infinite; }
+        .anim-fast { animation: flash-strobe 0.5s infinite; }
+        .anim-panic { animation: flash-strobe-panic 0.4s infinite; }
 
     </style>
 </head>
@@ -190,8 +185,11 @@
                 <label class="chk-label" data-tooltip="Habilita a lógica de intervalos entre as partes.">
                     <input type="checkbox" id="chk-intervalos" onchange="toggleIntervalosGlobais()" class="chk-input"> Intervalos
                 </label>
-                <label class="chk-label" data-tooltip="Habilita a possibilidade de estourar o tempo em fases individuais (contagem negativa).">
+                <label class="chk-label" data-tooltip="Habilita a possibilidade de estourar o tempo.">
                     <input type="checkbox" id="chk-estouro-global" onchange="toggleEstouroGlobal()" class="chk-input"> Permitir Estouro
+                </label>
+                <label class="chk-label" data-tooltip="Habilita sons. Se desmarcado, tudo fica mudo.">
+                    <input type="checkbox" id="chk-audio-global" onchange="toggleAudioGlobal()" class="chk-input"> Permitir Áudio
                 </label>
             </div>
         </div>
@@ -210,7 +208,9 @@
         <div id="relogio-real" data-tooltip="Hora Atual">--:--</div>
 
         <div class="conteudo-box" id="box-principal">
+            
             <h1 id="display-global-titulo" class="hidden"></h1>
+
             <h2 id="titulo-fase">...</h2>
             
             <div id="lbl-fim">FIM</div>
@@ -261,6 +261,7 @@
                 inicio: document.getElementById('hora-inicio').value, fim: document.getElementById('hora-fim').value, 
                 intervalosAtivos: document.getElementById('chk-intervalos').checked,
                 estouroGlobal: document.getElementById('chk-estouro-global').checked,
+                audioGlobal: document.getElementById('chk-audio-global').checked,
                 fases: [] 
             };
             document.querySelectorAll('.fase-row').forEach(row => {
@@ -268,6 +269,7 @@
                     titulo: row.querySelector('.inp-titulo').value, minutos: row.querySelector('.inp-tempo').value, redutivel: row.querySelector('.inp-redutivel').checked,
                     intTempo: row.querySelector('.inp-int-tempo').value, intManual: row.querySelector('.inp-int-manual').checked, 
                     estouroFase: row.querySelector('.inp-estouro-fase').checked,
+                    audioFase: row.querySelector('.inp-audio-fase').checked,
                     aviso: row.querySelector('.inp-aviso').value,
                     bg: row.querySelector('.inp-bg').value, txt: row.querySelector('.inp-txt').value
                 });
@@ -295,6 +297,7 @@
             document.getElementById('hora-inicio').value = d.inicio; document.getElementById('hora-fim').value = d.fim;
             document.getElementById('chk-intervalos').checked = d.intervalosAtivos; toggleIntervalosGlobais();
             document.getElementById('chk-estouro-global').checked = d.estouroGlobal || false; toggleEstouroGlobal();
+            document.getElementById('chk-audio-global').checked = d.audioGlobal || false; toggleAudioGlobal();
 
             document.getElementById('lista-fases').innerHTML = "";
             d.fases.forEach(f => {
@@ -304,6 +307,7 @@
                     last.querySelector('.inp-int-tempo').value=f.intTempo; 
                     last.querySelector('.inp-int-manual').checked=f.intManual; 
                     last.querySelector('.inp-estouro-fase').checked=f.estouroFase || false;
+                    last.querySelector('.inp-audio-fase').checked = (f.audioFase !== undefined) ? f.audioFase : true;
                     last.querySelector('.inp-aviso').value=f.aviso; 
                     uiAtualizarFase(last); 
                 }
@@ -341,6 +345,10 @@
             const c = document.getElementById('chk-estouro-global').checked; 
             document.querySelectorAll('.col-estouro').forEach(e => c ? e.classList.remove('hidden') : e.classList.add('hidden')); 
         }
+        function toggleAudioGlobal(){
+            const c = document.getElementById('chk-audio-global').checked;
+            document.querySelectorAll('.col-audio').forEach(e => c ? e.classList.remove('hidden') : e.classList.add('hidden'));
+        }
 
         function uiAtualizarFase(row) {
             const chkEstouro = row.querySelector('.inp-estouro-fase');
@@ -368,6 +376,7 @@
             idCount++; const c = document.getElementById('lista-fases');
             const hideInt = document.getElementById('chk-intervalos').checked ? '' : 'hidden';
             const hideEst = document.getElementById('chk-estouro-global').checked ? '' : 'hidden';
+            const hideAud = document.getElementById('chk-audio-global').checked ? '' : 'hidden';
             
             const div = document.createElement('div'); div.className = 'fase-row';
             div.innerHTML = `
@@ -378,6 +387,10 @@
                 
                 <div class="col-estouro ${hideEst}">
                     <div class="campo" style="align-items:center;" data-tooltip="Se marcado, o tempo estoura e conta negativo. Ignora intervalo."><label>Estouro?</label><input type="checkbox" class="inp-estouro-fase" style="width:20px; height:20px;" onchange="uiAtualizarFase(this.closest('.fase-row'))"></div>
+                </div>
+
+                <div class="col-audio ${hideAud}">
+                    <div class="campo" style="align-items:center;" data-tooltip="Se marcado, emite sons. Se global estiver off, esta opção é ignorada."><label>Áudio?</label><input type="checkbox" class="inp-audio-fase" checked style="width:20px; height:20px;"></div>
                 </div>
 
                 <div class="col-intervalo ${hideInt}">
@@ -407,18 +420,20 @@
                     segundosFinais: parseFloat(r.querySelector('.inp-tempo').value)*60, redutivel: r.querySelector('.inp-redutivel').checked,
                     intSegundos: parseInt(r.querySelector('.inp-int-tempo').value)||0, intManual: r.querySelector('.inp-int-manual').checked,
                     permitirEstouro: r.querySelector('.inp-estouro-fase').checked,
+                    audio: r.querySelector('.inp-audio-fase').checked,
                     aviso: parseInt(r.querySelector('.inp-aviso').value), bg: r.querySelector('.inp-bg').value, txt: r.querySelector('.inp-txt').value, img: url
                 });
             });
 
-            // Força estouro na última fase
-            if(cronograma.length > 0) cronograma[cronograma.length-1].permitirEstouro = true;
+            if(cronograma.length > 0) {
+                cronograma[cronograma.length-1].permitirEstouro = true;
+                // Mantém a config de audio que estava na UI para a ultima fase
+            }
 
             document.getElementById('config-screen').style.display='none'; 
             document.getElementById('display-screen').style.display='flex';
             if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{});
 
-            // Configurar Título Global
             const exibirTitulo = document.getElementById('chk-exibir-titulo').checked;
             const elTit = document.getElementById('display-global-titulo');
             if(exibirTitulo) {
@@ -490,50 +505,34 @@
             el.classList.remove('piscando-cor', 'piscando-vermelho', 'piscando-alerta-maximo');
             bg.classList.remove('bg-panic');
 
-            // --- LÓGICA DE ALERTA VISUAL (POSITIVO) ---
-            if(!emIntervalo && tempoRestante > 0){
+            if(!emIntervalo){
                 const aviso = cronograma[indexAtual].aviso;
-                if (tempoRestante <= aviso) el.classList.add('piscando-cor');
-            }
-
-            // --- LÓGICA DE TEMPO NEGATIVO (ESTOURO) ---
-            if(tempoRestante <= 0) {
-                // Fundo Pisca
-                if (tempoRestante <= -30) bg.classList.add('bg-panic');
-                
-                // Texto Pisca
-                if (tempoRestante > -60) {
-                    el.classList.add('piscando-vermelho'); // 0 a -60s: Vermelho Simples
-                } else {
-                    el.classList.add('piscando-alerta-maximo'); // > -60s: Alterna Vermelho/Original
+                if (tempoRestante > 0 && tempoRestante <= aviso) {
+                    el.classList.add('piscando-cor');
+                } else if (tempoRestante <= 0) {
+                    if (tempoRestante > -180) { 
+                        el.classList.add('piscando-vermelho');
+                    } else { 
+                        el.classList.add('piscando-alerta-maximo');
+                    }
+                    if (tempoRestante <= -30) bg.classList.add('bg-panic');
                 }
-
-                // BIP a cada 30s
-                if (Math.abs(tempoRestante) % 30 === 0) tocarBip();
             }
 
             if(tempoRestante < 0) {
-                // REGRA DE ESTOURO: 
-                // Se for a última fase OU se a fase atual permitir estouro
                 if(indexAtual === cronograma.length - 1 || cronograma[indexAtual].permitirEstouro) {
-                    if(intervaloTimer) clearInterval(intervaloTimer); 
-                    // Tocar bip ao zerar (se for exatamente 0 ou -1 na transição)
-                    if(tempoRestante === -1) tocarBip(); 
-                    
+                    clearInterval(intervaloTimer); tocarBip(); 
                     if(indexAtual === cronograma.length - 1) {
                         gerenciarFimNaUltima(tempoRestante);
                     }
-                    
                     intervaloTimer = setInterval(tickNegativo, 1000); 
                 } else {
-                    // Padrão: vai pro intervalo ou proxima
                     clearInterval(intervaloTimer); tocarBip();
                     if(emIntervalo) rodarFase(indexAtual+1); else gerenciarIntervalo();
                 }
             }
         }
 
-        // Loop específico para quando já estourou e está travado na fase
         function tickNegativo() {
             if(estado!=="RODANDO") return;
             tempoRestante--;
@@ -547,13 +546,12 @@
             el.classList.remove('piscando-cor', 'piscando-vermelho', 'piscando-alerta-maximo');
             bg.classList.remove('bg-panic');
 
-            // --- ALERTAS DE ESTOURO ---
-            if (tempoRestante > -60) el.classList.add('piscando-vermelho');
+            if (tempoRestante > -180) el.classList.add('piscando-vermelho');
             else el.classList.add('piscando-alerta-maximo');
             
             if (tempoRestante <= -30) bg.classList.add('bg-panic');
 
-            // BIP a cada 30s
+            // BIP a cada 30s se áudio permitido
             if (Math.abs(tempoRestante) % 30 === 0) tocarBip();
 
             if(indexAtual === cronograma.length - 1) {
@@ -565,14 +563,13 @@
             const elFim = document.getElementById('lbl-fim');
             elFim.style.setProperty('--txt-color', cronograma[indexAtual].txt);
             
-            // Só aparece após 2 minutos de atraso (-120s)
             if (tempo > -120) { elFim.classList.remove('ativo'); return; }
 
             elFim.classList.add('ativo');
-            let novaClasse = 'anim-slow'; // 2 min
-            if (tempo <= -300) novaClasse = 'anim-panic'; // 5 min
-            else if (tempo <= -240) novaClasse = 'anim-fast'; // 4 min
-            else if (tempo <= -180) novaClasse = 'anim-med'; // 3 min
+            let novaClasse = 'anim-slow';
+            if (tempo <= -300) novaClasse = 'anim-panic';
+            else if (tempo <= -240) novaClasse = 'anim-fast';
+            else if (tempo <= -180) novaClasse = 'anim-med';
 
             if (!elFim.classList.contains(novaClasse)) {
                 elFim.classList.remove('anim-slow', 'anim-med', 'anim-fast', 'anim-panic');
@@ -651,7 +648,6 @@
                     return;
                 }
                 if(!document.getElementById('btn-intervalo-manual').classList.contains('hidden')) return; 
-                // Se estamos negativos, apenas continua o tickNegativo
                 if(tempoRestante < 0 && (cronograma[indexAtual].permitirEstouro || indexAtual === cronograma.length-1)) {
                     estado="RODANDO";
                     document.getElementById('timer-principal').style.opacity="1"; 
@@ -734,7 +730,15 @@
 
         function montarData(s,ref){ const [h,m]=s.split(':'); const d=new Date(ref); d.setHours(parseInt(h),parseInt(m),0,0); return d; }
         function notificarAjuste(m){ const el=document.getElementById('txt-status'); el.innerText=m; el.style.color="#ffaa00"; }
-        function tocarBip(){ try{ const c=new(window.AudioContext||window.webkitAudioContext)(); const o=c.createOscillator(); o.type='sine'; o.frequency.value=880; o.connect(c.destination); o.start(); o.stop(c.currentTime+0.5); }catch(e){} }
+        
+        function tocarBip(){ 
+            const globalAudio = document.getElementById('chk-audio-global').checked;
+            const faseAudio = cronograma[indexAtual].audio;
+            if(!globalAudio || !faseAudio) return;
+
+            try{ const c=new(window.AudioContext||window.webkitAudioContext)(); const o=c.createOscillator(); o.type='sine'; o.frequency.value=880; o.connect(c.destination); o.start(); o.stop(c.currentTime+0.5); }catch(e){} 
+        }
+        
         function encerrar(){ 
             if(intervaloTimer) clearInterval(intervaloTimer);
             document.getElementById('display-screen').style.display = 'none'; 
