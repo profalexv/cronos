@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.31</title>
+    <title>cronos@alexandre.pro.br v1.32</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -19,7 +19,7 @@
         
         input, select { background: #333; color: white; border: 1px solid #555; padding: 8px; border-radius: 4px; }
         
-        /* Input de Título Global Personalizado */
+        /* Input de Título Global */
         #global-titulo {
             background: transparent; border: none; font-size: 1.8rem; font-weight: bold; 
             color: #00d2ff; width: 100%; padding: 5px; margin: 0;
@@ -47,10 +47,7 @@
         .col-intervalo { background: rgba(255, 170, 0, 0.15); padding: 5px; border-radius: 4px; display: flex; gap: 5px; border: 1px dashed #666; }
         .hidden { display: none !important; }
 
-        /* REGRA INTELIGENTE: Esconde o intervalo da última linha */
-        #lista-fases .fase-row:last-child .col-intervalo {
-            visibility: hidden; pointer-events: none;
-        }
+        #lista-fases .fase-row:last-child .col-intervalo { visibility: hidden; pointer-events: none; }
 
         /* Botões Ação */
         .btn-x { background: #ff4444; color: white; border: none; width: 25px; height: 25px; border-radius: 50%; font-weight: bold; cursor: pointer; }
@@ -58,7 +55,7 @@
         .btn-go { background: linear-gradient(135deg, #00d2ff, #0072ff); color: white; border: none; padding: 15px; flex-grow: 1; font-weight: bold; font-size: 1.1rem; border-radius: 4px; cursor: pointer; }
 
         /* --- APRESENTAÇÃO --- */
-        #display-screen { display: none; height: 100vh; width: 100vw; flex-direction: column; align-items: center; justify-content: center; background-color: #000; background-size: cover; background-position: center; position: relative; }
+        #display-screen { display: none; height: 100vh; width: 100vw; flex-direction: column; align-items: center; justify-content: center; background-color: #000; background-size: cover; background-position: center; position: relative; transition: background-color 0.5s; }
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1; }
         
         #relogio-real { position: absolute; top: 15px; right: 20px; z-index: 20; font-size: 1.5rem; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 20px; border: 1px solid #444; }
@@ -91,9 +88,17 @@
             display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.8); max-width: 250px; line-height: 1.4;
         }
 
+        /* Animações */
         .piscando { color: #ff4444 !important; animation: pulse-red 1s infinite; }
         @keyframes pulse-red { 0% { transform: scale(1); } 50% { transform: scale(1.02); text-shadow: 0 0 20px red; } 100% { transform: scale(1); } }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 170, 0, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 170, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 170, 0, 0); } }
+        
+        /* Piscar Fundo Crítico */
+        .bg-panic { animation: bg-flash 1s infinite; }
+        @keyframes bg-flash { 
+            0% { background-color: #300000; } 
+            50% { background-color: #aa0000; } 
+            100% { background-color: #300000; } 
+        }
     </style>
 </head>
 <body>
@@ -107,9 +112,8 @@
                 <input type="text" id="global-titulo" value="Escola Sabatina Viva" data-tooltip="Clique para editar o título do evento.">
                 <input type="color" id="global-cor-titulo" value="#00d2ff" style="width:40px; height:35px; border:none;" data-tooltip="Alterar cor do título.">
             </div>
-
             <div style="display:flex; gap:10px;">
-                <button class="btn-file" onclick="salvarConfiguracao()" data-tooltip="Salvar a programação atual (incluindo título) em arquivo.">💾 Salvar</button>
+                <button class="btn-file" onclick="salvarConfiguracao()" data-tooltip="Salvar a programação com o nome do título.">💾 Salvar</button>
                 <button class="btn-file" onclick="document.getElementById('file-input').click()" data-tooltip="Carregar uma programação salva.">📂 Abrir</button>
             </div>
         </div>
@@ -155,11 +159,11 @@
             </div>
 
             <div class="controles-play">
-                <button class="btn-ctrl" onclick="acaoPausar()" data-tooltip="Pausar cronômetro">⏸ Pausar</button>
-                <button class="btn-ctrl" onclick="acaoContinuar()" data-tooltip="Continuar cronômetro">▶ Continuar</button>
+                <button id="btn-pausar" class="btn-ctrl" onclick="acaoPausar()" data-tooltip="Pausar cronômetro (ou parar tempo negativo)">⏸ Pausar/Parar</button>
+                <button id="btn-continuar" class="btn-ctrl hidden" onclick="acaoContinuar()" data-tooltip="Continuar contagem">▶ Continuar</button>
                 <button class="btn-ctrl" onclick="acaoReiniciarFase()" style="border-color:#ffaa00; color:#ffaa00;" data-tooltip="Reiniciar etapa atual">↺ Reiniciar Fase</button>
                 <button class="btn-ctrl" onclick="acaoAvançar()" style="border-color:#00d2ff; color:#00d2ff;" data-tooltip="Pular para a próxima etapa (ignora espera).">⏭ Avançar</button>
-                <button class="btn-ctrl" onclick="encerrar()" style="border-color:#ff4444; color:#ff4444;" data-tooltip="Encerrar apresentação imediatamente.">⏹ Encerrar</button>
+                <button class="btn-ctrl" onclick="encerrar()" style="border-color:#ff4444; color:#ff4444;" data-tooltip="Voltar ao menu de configuração.">⏹ Encerrar</button>
             </div>
         </div>
     </div>
@@ -178,20 +182,19 @@
     </div>
 
     <script>
-        // --- ATUALIZA COR DO TÍTULO EM TEMPO REAL ---
-        document.getElementById('global-cor-titulo').addEventListener('input', function(e) {
-            document.getElementById('global-titulo').style.color = e.target.value;
-        });
+        // --- EVENTOS UI ---
+        document.getElementById('global-cor-titulo').addEventListener('input', e => document.getElementById('global-titulo').style.color = e.target.value);
 
         // --- SISTEMA DE ARQUIVOS ---
         function salvarConfiguracao() {
+            const titulo = document.getElementById('global-titulo').value || "Cronograma";
+            // Sanitiza o nome do arquivo
+            const nomeArquivo = titulo.replace(/[^a-z0-9]/gi, '_').toLowerCase() + ".json";
+
             const dados = { 
-                tituloGlobal: document.getElementById('global-titulo').value,
-                corGlobal: document.getElementById('global-cor-titulo').value,
-                inicio: document.getElementById('hora-inicio').value, 
-                fim: document.getElementById('hora-fim').value, 
-                intervalosAtivos: document.getElementById('chk-intervalos').checked, 
-                fases: [] 
+                tituloGlobal: titulo, corGlobal: document.getElementById('global-cor-titulo').value,
+                inicio: document.getElementById('hora-inicio').value, fim: document.getElementById('hora-fim').value, 
+                intervalosAtivos: document.getElementById('chk-intervalos').checked, fases: [] 
             };
             document.querySelectorAll('.fase-row').forEach(row => {
                 dados.fases.push({
@@ -202,7 +205,7 @@
             });
             const blob = new Blob([JSON.stringify(dados, null, 2)], { type: "application/json" });
             const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-            const d=new Date(); a.download = `cronograma_${d.getHours()}h${d.getMinutes()}.json`;
+            a.download = nomeArquivo;
             document.body.appendChild(a); a.click(); document.body.removeChild(a);
         }
 
@@ -214,11 +217,7 @@
         }
 
         function aplicarConfiguracao(d) {
-            if(d.tituloGlobal) {
-                document.getElementById('global-titulo').value = d.tituloGlobal;
-                document.getElementById('global-cor-titulo').value = d.corGlobal || "#00d2ff";
-                document.getElementById('global-titulo').style.color = d.corGlobal || "#00d2ff";
-            }
+            if(d.tituloGlobal) { document.getElementById('global-titulo').value = d.tituloGlobal; document.getElementById('global-cor-titulo').value = d.corGlobal || "#00d2ff"; document.getElementById('global-titulo').style.color = d.corGlobal || "#00d2ff"; }
             document.getElementById('hora-inicio').value = d.inicio; document.getElementById('hora-fim').value = d.fim;
             document.getElementById('chk-intervalos').checked = d.intervalosAtivos; toggleIntervalosGlobais();
             document.getElementById('lista-fases').innerHTML = "";
@@ -227,29 +226,15 @@
                 const l = document.querySelectorAll('.fase-row'); const last = l[l.length-1];
                 if(last){ last.querySelector('.inp-int-tempo').value=f.intTempo; last.querySelector('.inp-int-manual').checked=f.intManual; last.querySelector('.inp-aviso').value=f.aviso; }
             });
-            alert("Configuração carregada!");
+            alert("Configuração carregada! (Nota: Selecione as imagens novamente)");
         }
 
-        // --- TOOLTIPS 3s ---
+        // --- TOOLTIPS ---
         const tooltip = document.getElementById('custom-tooltip');
         let tooltipTimeout;
-        document.addEventListener('mousemove', e => {
-            if(tooltip.style.display==='block'){ tooltip.style.top=(e.clientY+15)+'px'; tooltip.style.left=(e.clientX+15)+'px'; }
-        });
-        document.addEventListener('mouseover', e => {
-            const t = e.target.closest('[data-tooltip]');
-            if(t){
-                tooltipTimeout = setTimeout(()=>{
-                    tooltip.innerText = t.getAttribute('data-tooltip');
-                    tooltip.style.top = (e.clientY+15)+'px'; tooltip.style.left=(e.clientX+15)+'px';
-                    tooltip.style.display = 'block';
-                }, 3000);
-            }
-        });
-        document.addEventListener('mouseout', e => {
-            const t = e.target.closest('[data-tooltip]');
-            if(t){ clearTimeout(tooltipTimeout); tooltip.style.display='none'; }
-        });
+        document.addEventListener('mousemove', e => { if(tooltip.style.display==='block'){ tooltip.style.top=(e.clientY+15)+'px'; tooltip.style.left=(e.clientX+15)+'px'; }});
+        document.addEventListener('mouseover', e => { const t = e.target.closest('[data-tooltip]'); if(t){ tooltipTimeout = setTimeout(()=>{ tooltip.innerText=t.getAttribute('data-tooltip'); tooltip.style.top=(e.clientY+15)+'px'; tooltip.style.left=(e.clientX+15)+'px'; tooltip.style.display='block'; }, 3000); }});
+        document.addEventListener('mouseout', e => { const t=e.target.closest('[data-tooltip]'); if(t){ clearTimeout(tooltipTimeout); tooltip.style.display='none'; }});
 
         // --- CORE ---
         let cronograma=[], indexAtual=0, tempoRestante=0, estado="PARADO", intervaloTimer=null, dataFimGlobal=null, emIntervalo=false;
@@ -313,13 +298,11 @@
             document.getElementById('display-screen').style.display='flex';
             if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{});
 
-            // Lógica de Espera (Futuro)
-            if(now < dIni) {
-                iniciarEspera(dIni);
-            } else {
-                // Lógica de Atraso (Passado)
-                const plan = cronograma.reduce((a,b)=>a+b.minutosOrig,0);
-                const disp = (dataFimGlobal - now)/60000;
+            atualizarBotoes(false); // Play visivel, Pause oculto
+
+            if(now < dIni) iniciarEspera(dIni);
+            else {
+                const plan = cronograma.reduce((a,b)=>a+b.minutosOrig,0); const disp = (dataFimGlobal - now)/60000;
                 if(plan > disp) if(!calcularAjuste(now)) return;
                 indexAtual=0; rodarFase(0);
             }
@@ -334,11 +317,9 @@
             document.getElementById('display-screen').style.backgroundColor = '#111';
             
             intervaloTimer = setInterval(() => {
-                const now = new Date();
-                const diff = (target - now) / 1000;
+                const now = new Date(); const diff = (target - now) / 1000;
                 if (diff <= 0) {
-                    clearInterval(intervaloTimer);
-                    tocarBip();
+                    clearInterval(intervaloTimer); tocarBip();
                     if(calcularAjuste(new Date())) { indexAtual = 0; rodarFase(0); }
                 } else {
                     const m = Math.floor(diff / 60); const s = Math.floor(diff % 60);
@@ -348,22 +329,44 @@
         }
 
         function rodarFase(idx){
-            if(idx>=cronograma.length) return encerrar();
             indexAtual=idx; const fase=cronograma[idx]; tempoRestante=fase.segundosFinais; emIntervalo=false; estado="RODANDO";
             aplicarVisual(fase);
+            atualizarBotoes(true);
             if(intervaloTimer) clearInterval(intervaloTimer); intervaloTimer=setInterval(tick,1000); tick();
         }
 
         function tick(){
             if(estado!=="RODANDO" && estado!=="INTERVALO") return;
             tempoRestante--;
-            const m=Math.floor(tempoRestante/60), s=tempoRestante%60;
-            const el=document.getElementById('timer-principal');
-            el.innerText=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-            if(!emIntervalo){ if(tempoRestante<=cronograma[indexAtual].aviso && tempoRestante>0) el.classList.add('piscando'); else el.classList.remove('piscando'); }
-            if(tempoRestante<0){
-                clearInterval(intervaloTimer); tocarBip();
-                if(emIntervalo) rodarFase(indexAtual+1); else gerenciarIntervalo();
+            
+            // Logica Visual de Tempo (Suporta negativo)
+            const abs = Math.abs(tempoRestante);
+            const m = Math.floor(abs / 60); const s = abs % 60;
+            const sinal = tempoRestante < 0 ? "-" : "";
+            const el = document.getElementById('timer-principal');
+            el.innerText = `${sinal}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+            // Logica de Alerta
+            const bg = document.getElementById('display-screen');
+            if(!emIntervalo){
+                if(tempoRestante <= cronograma[indexAtual].aviso && tempoRestante > -30) {
+                    el.classList.add('piscando'); bg.classList.remove('bg-panic');
+                } else if(tempoRestante <= -30) {
+                    el.classList.add('piscando'); bg.classList.add('bg-panic');
+                } else {
+                    el.classList.remove('piscando'); bg.classList.remove('bg-panic');
+                }
+            }
+
+            // Logica de Troca
+            if(tempoRestante < 0) {
+                // Se NÃO for a última, troca. Se for a última, continua contando negativo.
+                if(indexAtual < cronograma.length - 1) {
+                    clearInterval(intervaloTimer); tocarBip();
+                    if(emIntervalo) rodarFase(indexAtual+1); else gerenciarIntervalo();
+                } else {
+                    // Última fase estourada -> Apenas visual (já tratado acima)
+                }
             }
         }
 
@@ -375,7 +378,7 @@
         }
 
         function entrarIntervaloTempo(s){ emIntervalo=true; estado="INTERVALO"; tempoRestante=s; configurarVisualIntervalo(true); intervaloTimer=setInterval(tick,1000); tick(); }
-        function entrarIntervaloManual(){ emIntervalo=true; estado="PAUSADO"; configurarVisualIntervalo(false); document.getElementById('btn-intervalo-manual').classList.remove('hidden'); }
+        function entrarIntervaloManual(){ emIntervalo=true; estado="PAUSADO"; atualizarBotoes(false); configurarVisualIntervalo(false); document.getElementById('btn-intervalo-manual').classList.remove('hidden'); }
         function sairIntervaloManual(){ if(calcularAjuste(new Date())){ document.getElementById('btn-intervalo-manual').classList.add('hidden'); document.getElementById('timer-principal').classList.remove('hidden'); rodarFase(indexAtual+1); }}
         
         function configurarVisualIntervalo(isTempo){
@@ -385,7 +388,24 @@
             if(!isTempo) tm.classList.add('hidden');
         }
 
-        function acaoPausar(){ if(estado==="RODANDO"||estado==="INTERVALO"||estado==="WAITING"){ estado="PAUSADO"; clearInterval(intervaloTimer); document.getElementById('timer-principal').style.opacity="0.5"; }}
+        function atualizarBotoes(rodando) {
+            if(rodando) {
+                document.getElementById('btn-pausar').classList.remove('hidden');
+                document.getElementById('btn-continuar').classList.add('hidden');
+            } else {
+                document.getElementById('btn-pausar').classList.add('hidden');
+                document.getElementById('btn-continuar').classList.remove('hidden');
+            }
+        }
+
+        function acaoPausar(){ 
+            // Pausa ou Para o contador negativo
+            estado="PAUSADO"; clearInterval(intervaloTimer); 
+            document.getElementById('timer-principal').style.opacity="0.5";
+            document.getElementById('display-screen').classList.remove('bg-panic'); // Para o piscar fundo se houver
+            atualizarBotoes(false);
+        }
+        
         function acaoContinuar(){ 
             if(estado==="PAUSADO"){ 
                 if(document.getElementById('titulo-fase').innerText === "AGUARDANDO INÍCIO") {
@@ -393,22 +413,29 @@
                     const dIni = montarData(hI, new Date());
                     iniciarEspera(dIni);
                     document.getElementById('timer-principal').style.opacity="1";
+                    atualizarBotoes(true);
                     return;
                 }
                 if(!document.getElementById('btn-intervalo-manual').classList.contains('hidden')) return; 
-                if(!calcularAjuste(new Date())) return; 
-                estado=emIntervalo?"INTERVALO":"RODANDO"; document.getElementById('timer-principal').style.opacity="1"; intervaloTimer=setInterval(tick,1000); 
+                
+                // Se já estamos em tempo negativo, não calcula ajuste, apenas roda
+                if(tempoRestante >= 0 && !calcularAjuste(new Date())) return; 
+                
+                estado=emIntervalo?"INTERVALO":"RODANDO"; 
+                document.getElementById('timer-principal').style.opacity="1"; 
+                atualizarBotoes(true);
+                intervaloTimer=setInterval(tick,1000); 
             }
         }
+        
         function acaoReiniciarFase(){ tempoRestante=cronograma[indexAtual].segundosFinais; if(calcularAjuste(new Date())){ const m=Math.floor(tempoRestante/60), s=tempoRestante%60; document.getElementById('timer-principal').innerText=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; if(estado!=="RODANDO") acaoContinuar(); }}
         
         function acaoAvançar(){ 
             if(estado === "WAITING" || document.getElementById('titulo-fase').innerText === "AGUARDANDO INÍCIO") {
-                clearInterval(intervaloTimer);
-                indexAtual = 0;
-                rodarFase(0);
+                clearInterval(intervaloTimer); indexAtual = 0; rodarFase(0);
             } else {
-                rodarFase(indexAtual + 1); 
+                if(indexAtual < cronograma.length - 1) rodarFase(indexAtual + 1); 
+                else encerrar();
             }
         }
 
@@ -436,7 +463,7 @@
         }
 
         function aplicarVisual(f){
-            const el=document.getElementById('display-screen'); el.style.backgroundColor=f.bg; el.style.backgroundImage=f.img?`url('${f.img}')`:'none';
+            const el=document.getElementById('display-screen'); el.style.backgroundColor=f.bg; el.style.backgroundImage=f.img?`url('${f.img}')`:'none'; el.classList.remove('bg-panic');
             document.getElementById('btn-intervalo-manual').classList.add('hidden');
             document.getElementById('timer-principal').classList.remove('hidden');
             document.getElementById('titulo-fase').innerText=f.titulo; document.getElementById('titulo-fase').style.color=f.txt;
@@ -451,11 +478,14 @@
         function tocarBip(){ try{ const c=new(window.AudioContext||window.webkitAudioContext)(); const o=c.createOscillator(); o.type='sine'; o.frequency.value=880; o.connect(c.destination); o.start(); o.stop(c.currentTime+0.5); }catch(e){} }
         function encerrar(){ 
             if(intervaloTimer) clearInterval(intervaloTimer);
-            if(document.getElementById('config-screen').style.display !== 'none') return;
-            const d=document.getElementById('display-screen'); d.style.background="#000"; d.style.backgroundImage='none';
-            document.getElementById('titulo-fase').innerText="ENCERRADO"; 
-            document.getElementById('timer-principal').innerText="FIM"; 
-            document.querySelector('.controles-play').style.display='none';
+            document.getElementById('display-screen').style.display = 'none'; // Volta para config
+            document.getElementById('config-screen').style.display = 'block'; // Mostra config
+            
+            // Reseta visual da tela de display para quando abrir de novo
+            const d=document.getElementById('display-screen'); 
+            d.style.background="#000"; d.style.backgroundImage='none'; d.classList.remove('bg-panic');
+            document.getElementById('titulo-fase').innerText="..."; 
+            document.getElementById('timer-principal').innerText="00:00"; 
             document.getElementById('btn-intervalo-manual').classList.add('hidden');
             document.getElementById('timer-principal').classList.remove('hidden');
         }
