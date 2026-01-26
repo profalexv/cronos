@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.33</title>
+    <title>cronos@alexandre.pro.br v1.34</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -341,12 +341,11 @@
             aplicarVisual(fase);
             atualizarBotoes(true);
             
-            // Ocultar botão Avançar se for a última
             const btnAv = document.getElementById('btn-avancar');
             if(indexAtual >= cronograma.length - 1) btnAv.classList.add('hidden');
             else btnAv.classList.remove('hidden');
 
-            document.getElementById('lbl-fim').classList.add('hidden'); // Reset etiqueta FIM
+            document.getElementById('lbl-fim').classList.add('hidden');
 
             if(intervaloTimer) clearInterval(intervaloTimer); intervaloTimer=setInterval(tick,1000); tick();
         }
@@ -362,8 +361,6 @@
             el.innerText = `${sinal}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 
             const bg = document.getElementById('display-screen');
-            
-            // Texto dinâmico do botão pausar
             const btnPausa = document.getElementById('btn-pausar');
             btnPausa.innerText = tempoRestante < 0 ? "⏸ PARAR" : "⏸ PAUSAR";
 
@@ -382,7 +379,6 @@
                     clearInterval(intervaloTimer); tocarBip();
                     if(emIntervalo) rodarFase(indexAtual+1); else gerenciarIntervalo();
                 } else {
-                    // Última fase: Mostra FIM e continua negativo
                     document.getElementById('lbl-fim').classList.remove('hidden');
                 }
             }
@@ -443,7 +439,16 @@
             }
         }
         
-        function acaoReiniciarFase(){ tempoRestante=cronograma[indexAtual].segundosFinais; if(calcularAjuste(new Date())){ const m=Math.floor(tempoRestante/60), s=tempoRestante%60; document.getElementById('timer-principal').innerText=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; if(estado!=="RODANDO") acaoContinuar(); }}
+        function acaoReiniciarFase(){ 
+            tempoRestante=cronograma[indexAtual].segundosFinais; 
+            document.getElementById('lbl-fim').classList.add('hidden');
+            document.getElementById('display-screen').classList.remove('bg-panic');
+            if(calcularAjuste(new Date())){ 
+                const m=Math.floor(tempoRestante/60), s=tempoRestante%60; 
+                document.getElementById('timer-principal').innerText=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; 
+                if(estado!=="RODANDO") acaoContinuar(); 
+            }
+        }
         
         function acaoAvançar(){ 
             if(estado === "WAITING" || document.getElementById('titulo-fase').innerText === "AGUARDANDO INÍCIO") {
