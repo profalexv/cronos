@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.32</title>
+    <title>cronos@alexandre.pro.br v1.33</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -67,9 +67,15 @@
         #timer-principal { font-size: 9rem; margin: 0; font-weight: bold; line-height: 1; font-variant-numeric: tabular-nums; }
         #rodape-info { margin-top: 15px; font-size: 1.2rem; color: #aaa; border-top: 1px solid #555; padding-top: 10px; display: flex; justify-content: space-between;}
 
+        /* ETIQUETA FIM */
+        #lbl-fim { 
+            font-size: 6rem; color: #ff4444; font-weight: 800; animation: pulse-red 1s infinite; 
+            line-height: 1; text-shadow: 0 0 20px rgba(0,0,0,0.8); margin-bottom: -20px; margin-top: -20px;
+        }
+
         /* Controles Playback */
         .controles-play { margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-        .btn-ctrl { background: rgba(255,255,255,0.1); border: 1px solid #555; color: white; padding: 8px 15px; cursor: pointer; border-radius: 4px; min-width: 100px; transition: background 0.2s;}
+        .btn-ctrl { background: rgba(255,255,255,0.1); border: 1px solid #555; color: white; padding: 8px 15px; cursor: pointer; border-radius: 4px; min-width: 120px; transition: background 0.2s;}
         .btn-ctrl:hover { background: rgba(255,255,255,0.2); }
         
         .btn-proximo { background: #ffaa00; color: #000; font-weight: bold; font-size: 1.5rem; padding: 15px 30px; border: none; border-radius: 50px; cursor: pointer; animation: pulse 2s infinite; margin-top: 20px; }
@@ -148,6 +154,9 @@
 
         <div class="conteudo-box" id="box-principal">
             <h2 id="titulo-fase">...</h2>
+            
+            <div id="lbl-fim" class="hidden">FIM</div>
+
             <div id="area-timer" data-tooltip="Tempo restante">
                 <div id="timer-principal">00:00</div>
             </div>
@@ -159,10 +168,10 @@
             </div>
 
             <div class="controles-play">
-                <button id="btn-pausar" class="btn-ctrl" onclick="acaoPausar()" data-tooltip="Pausar cronômetro (ou parar tempo negativo)">⏸ Pausar/Parar</button>
+                <button id="btn-pausar" class="btn-ctrl" onclick="acaoPausar()" data-tooltip="Pausar ou Parar o tempo">⏸ PAUSAR</button>
                 <button id="btn-continuar" class="btn-ctrl hidden" onclick="acaoContinuar()" data-tooltip="Continuar contagem">▶ Continuar</button>
-                <button class="btn-ctrl" onclick="acaoReiniciarFase()" style="border-color:#ffaa00; color:#ffaa00;" data-tooltip="Reiniciar etapa atual">↺ Reiniciar Fase</button>
-                <button class="btn-ctrl" onclick="acaoAvançar()" style="border-color:#00d2ff; color:#00d2ff;" data-tooltip="Pular para a próxima etapa (ignora espera).">⏭ Avançar</button>
+                <button class="btn-ctrl" onclick="acaoReiniciarFase()" style="border-color:#ffaa00; color:#ffaa00;" data-tooltip="Reiniciar etapa atual">↺ Reiniciar</button>
+                <button id="btn-avancar" class="btn-ctrl" onclick="acaoAvançar()" style="border-color:#00d2ff; color:#00d2ff;" data-tooltip="Pular para a próxima etapa.">⏭ Avançar</button>
                 <button class="btn-ctrl" onclick="encerrar()" style="border-color:#ff4444; color:#ff4444;" data-tooltip="Voltar ao menu de configuração.">⏹ Encerrar</button>
             </div>
         </div>
@@ -188,7 +197,6 @@
         // --- SISTEMA DE ARQUIVOS ---
         function salvarConfiguracao() {
             const titulo = document.getElementById('global-titulo').value || "Cronograma";
-            // Sanitiza o nome do arquivo
             const nomeArquivo = titulo.replace(/[^a-z0-9]/gi, '_').toLowerCase() + ".json";
 
             const dados = { 
@@ -298,7 +306,7 @@
             document.getElementById('display-screen').style.display='flex';
             if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{});
 
-            atualizarBotoes(false); // Play visivel, Pause oculto
+            atualizarBotoes(false); 
 
             if(now < dIni) iniciarEspera(dIni);
             else {
@@ -332,6 +340,14 @@
             indexAtual=idx; const fase=cronograma[idx]; tempoRestante=fase.segundosFinais; emIntervalo=false; estado="RODANDO";
             aplicarVisual(fase);
             atualizarBotoes(true);
+            
+            // Ocultar botão Avançar se for a última
+            const btnAv = document.getElementById('btn-avancar');
+            if(indexAtual >= cronograma.length - 1) btnAv.classList.add('hidden');
+            else btnAv.classList.remove('hidden');
+
+            document.getElementById('lbl-fim').classList.add('hidden'); // Reset etiqueta FIM
+
             if(intervaloTimer) clearInterval(intervaloTimer); intervaloTimer=setInterval(tick,1000); tick();
         }
 
@@ -339,15 +355,18 @@
             if(estado!=="RODANDO" && estado!=="INTERVALO") return;
             tempoRestante--;
             
-            // Logica Visual de Tempo (Suporta negativo)
             const abs = Math.abs(tempoRestante);
             const m = Math.floor(abs / 60); const s = abs % 60;
             const sinal = tempoRestante < 0 ? "-" : "";
             const el = document.getElementById('timer-principal');
             el.innerText = `${sinal}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 
-            // Logica de Alerta
             const bg = document.getElementById('display-screen');
+            
+            // Texto dinâmico do botão pausar
+            const btnPausa = document.getElementById('btn-pausar');
+            btnPausa.innerText = tempoRestante < 0 ? "⏸ PARAR" : "⏸ PAUSAR";
+
             if(!emIntervalo){
                 if(tempoRestante <= cronograma[indexAtual].aviso && tempoRestante > -30) {
                     el.classList.add('piscando'); bg.classList.remove('bg-panic');
@@ -358,14 +377,13 @@
                 }
             }
 
-            // Logica de Troca
             if(tempoRestante < 0) {
-                // Se NÃO for a última, troca. Se for a última, continua contando negativo.
                 if(indexAtual < cronograma.length - 1) {
                     clearInterval(intervaloTimer); tocarBip();
                     if(emIntervalo) rodarFase(indexAtual+1); else gerenciarIntervalo();
                 } else {
-                    // Última fase estourada -> Apenas visual (já tratado acima)
+                    // Última fase: Mostra FIM e continua negativo
+                    document.getElementById('lbl-fim').classList.remove('hidden');
                 }
             }
         }
@@ -399,10 +417,9 @@
         }
 
         function acaoPausar(){ 
-            // Pausa ou Para o contador negativo
             estado="PAUSADO"; clearInterval(intervaloTimer); 
             document.getElementById('timer-principal').style.opacity="0.5";
-            document.getElementById('display-screen').classList.remove('bg-panic'); // Para o piscar fundo se houver
+            document.getElementById('display-screen').classList.remove('bg-panic');
             atualizarBotoes(false);
         }
         
@@ -417,8 +434,6 @@
                     return;
                 }
                 if(!document.getElementById('btn-intervalo-manual').classList.contains('hidden')) return; 
-                
-                // Se já estamos em tempo negativo, não calcula ajuste, apenas roda
                 if(tempoRestante >= 0 && !calcularAjuste(new Date())) return; 
                 
                 estado=emIntervalo?"INTERVALO":"RODANDO"; 
@@ -435,7 +450,6 @@
                 clearInterval(intervaloTimer); indexAtual = 0; rodarFase(0);
             } else {
                 if(indexAtual < cronograma.length - 1) rodarFase(indexAtual + 1); 
-                else encerrar();
             }
         }
 
@@ -478,13 +492,13 @@
         function tocarBip(){ try{ const c=new(window.AudioContext||window.webkitAudioContext)(); const o=c.createOscillator(); o.type='sine'; o.frequency.value=880; o.connect(c.destination); o.start(); o.stop(c.currentTime+0.5); }catch(e){} }
         function encerrar(){ 
             if(intervaloTimer) clearInterval(intervaloTimer);
-            document.getElementById('display-screen').style.display = 'none'; // Volta para config
-            document.getElementById('config-screen').style.display = 'block'; // Mostra config
+            document.getElementById('display-screen').style.display = 'none'; 
+            document.getElementById('config-screen').style.display = 'block'; 
             
-            // Reseta visual da tela de display para quando abrir de novo
             const d=document.getElementById('display-screen'); 
             d.style.background="#000"; d.style.backgroundImage='none'; d.classList.remove('bg-panic');
             document.getElementById('titulo-fase').innerText="..."; 
+            document.getElementById('lbl-fim').classList.add('hidden');
             document.getElementById('timer-principal').innerText="00:00"; 
             document.getElementById('btn-intervalo-manual').classList.add('hidden');
             document.getElementById('timer-principal').classList.remove('hidden');
