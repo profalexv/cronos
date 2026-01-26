@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.45</title>
+    <title>cronos@alexandre.pro.br v1.46</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -57,8 +57,9 @@
             background: #1a1a1a; padding: 10px; border-top: 1px dashed #444; display: none;
         }
         .audio-panel.open { display: block; }
-        .audio-slot { display: flex; gap: 10px; align-items: center; margin-bottom: 5px; background: #2a2a2a; padding: 5px; border-radius: 4px; }
+        .audio-slot { display: flex; gap: 10px; align-items: center; margin-bottom: 5px; background: #2a2a2a; padding: 5px; border-radius: 4px; flex-wrap: wrap; }
         .audio-slot span { font-size: 0.8rem; color: #888; }
+        .aud-warn { color: #ffaa00; font-size: 0.8rem; font-style: italic; display: flex; align-items: center; gap: 5px;}
 
         /* Colunas condicionais */
         .col-intervalo { background: rgba(255, 170, 0, 0.15); padding: 5px; border-radius: 4px; display: flex; gap: 5px; border: 1px dashed #666; }
@@ -199,7 +200,7 @@
                 <label class="chk-label" data-tooltip="Habilita a possibilidade de estourar o tempo.">
                     <input type="checkbox" id="chk-estouro-global" onchange="toggleEstouroGlobal()" class="chk-input"> Permitir Estouro
                 </label>
-                <label class="chk-label" data-tooltip="Habilita controles de áudio.">
+                <label class="chk-label" data-tooltip="Habilita sons. Se desmarcado, tudo fica mudo.">
                     <input type="checkbox" id="chk-audio-global" onchange="toggleAudioGlobal()" class="chk-input"> Permitir Áudio
                 </label>
             </div>
@@ -278,11 +279,21 @@
             document.querySelectorAll('.fase-wrapper').forEach(wrap => {
                 const row = wrap.querySelector('.fase-row');
                 const customAudios = [];
-                // Coleta configurações de áudios extras (APENAS TEMPO, não o arquivo)
+                // Salva o nome do arquivo para lembrete
                 wrap.querySelectorAll('.audio-slot').forEach(slot => {
+                    const fileIn = slot.querySelector('.aud-file');
+                    let fName = "";
+                    if(fileIn.files.length > 0) fName = fileIn.files[0].name;
+                    else {
+                        // Tenta recuperar do aviso existente
+                        const warn = slot.querySelector('.aud-warn');
+                        if(warn) fName = warn.innerText.replace('⚠️ ', '').replace('Re-selecione: ', '');
+                    }
+
                     customAudios.push({
                         min: slot.querySelector('.aud-min').value,
-                        sec: slot.querySelector('.aud-sec').value
+                        sec: slot.querySelector('.aud-sec').value,
+                        fileName: fName
                     });
                 });
 
@@ -332,12 +343,12 @@
                 l.querySelector('.inp-beep-fase').checked = (f.beepFase !== undefined) ? f.beepFase : true;
                 l.querySelector('.inp-aviso').value=f.aviso; 
                 
-                // Restaura slots de áudio (mas não os arquivos)
+                // Restaura slots de áudio com lembrete
                 if(f.customAudioTimes && f.customAudioTimes.length > 0) {
                     const painel = div.querySelector('.audio-panel');
                     painel.classList.add('open');
                     f.customAudioTimes.forEach(t => {
-                        adicionarSlotAudio(painel, t.min, t.sec);
+                        adicionarSlotAudio(painel, t.min, t.sec, t.fileName);
                     });
                 }
 
@@ -353,7 +364,7 @@
         document.addEventListener('mouseout', e => { const t=e.target.closest('[data-tooltip]'); if(t){ clearTimeout(tooltipTimeout); tooltip.style.display='none'; }});
 
         let cronograma=[], indexAtual=0, tempoRestante=0, estado="PARADO", intervaloTimer=null, dataFimGlobal=null, emIntervalo=false;
-        let currentAudioPlayer = null; // Para parar áudios customizados
+        let currentAudioPlayer = null; 
 
         window.onload = function() {
             const now = new Date(); const stdStart = new Date(now); stdStart.setHours(9,20,0,0);
@@ -380,7 +391,6 @@
         function toggleAudioGlobal(){
             const c = document.getElementById('chk-audio-global').checked;
             document.querySelectorAll('.col-audio').forEach(e => c ? e.classList.remove('hidden') : e.classList.add('hidden'));
-            // Também esconde/mostra botões de som extra
             document.querySelectorAll('.btn-show-audio').forEach(btn => c ? btn.classList.remove('hidden') : btn.classList.add('hidden'));
         }
 
@@ -452,7 +462,7 @@
             wrapper.appendChild(audioPanel);
             c.appendChild(wrapper);
             uiAtualizarFase(div);
-            return wrapper; // Retorna o wrapper para manipulação
+            return wrapper;
         }
 
         function toggleAudioPanel(btn) {
@@ -460,14 +470,17 @@
             panel.classList.toggle('open');
         }
 
-        function adicionarSlotAudio(panel, minVal=0, secVal=0) {
+        function adicionarSlotAudio(panel, minVal=0, secVal=0, fileName="") {
             const list = panel.querySelector('.audio-list');
             const div = document.createElement('div'); div.className = 'audio-slot';
+            const aviso = fileName ? `<span class="aud-warn">⚠️ Re-selecione: ${fileName}</span>` : '';
+            
             div.innerHTML = `
                 <span>Tocar faltando:</span>
                 <input type="number" class="aud-min" value="${minVal}" placeholder="Min" style="width:40px;">:
                 <input type="number" class="aud-sec" value="${secVal}" placeholder="Seg" style="width:40px;">
                 <input type="file" class="aud-file" accept="audio/*">
+                ${aviso}
                 <button class="btn-x" style="width:20px; height:20px; font-size:0.7rem;" onclick="this.parentElement.remove()">X</button>
             `;
             list.appendChild(div);
@@ -475,7 +488,8 @@
 
         function iniciarApresentacao() {
             const hI = document.getElementById('hora-inicio').value, hF = document.getElementById('hora-fim').value;
-            if(!hI || !hF) return alert("Configure os dados.");
+            const rows = document.querySelectorAll('.fase-row');
+            if(!hI || !hF || rows.length===0) return alert("Configure os dados.");
             const now = new Date(); const dIni = montarData(hI, now);
             dataFimGlobal = montarData(hF, now); if(dataFimGlobal < dIni) dataFimGlobal.setDate(dataFimGlobal.getDate()+1);
             cronograma = [];
@@ -486,7 +500,6 @@
                 const img = row.querySelector('.inp-img'); 
                 const url = img.files[0] ? URL.createObjectURL(img.files[0]) : "";
                 
-                // Mapear áudios customizados
                 const customAudios = [];
                 wrap.querySelectorAll('.audio-slot').forEach(slot => {
                     const f = slot.querySelector('.aud-file').files[0];
@@ -506,7 +519,7 @@
                     intSegundos: parseInt(row.querySelector('.inp-int-tempo').value)||0, intManual: row.querySelector('.inp-int-manual').checked,
                     permitirEstouro: row.querySelector('.inp-estouro-fase').checked,
                     beep: row.querySelector('.inp-beep-fase').checked,
-                    aviso: parseInt(row.querySelector('.inp-aviso').value), bg: row.querySelector('.inp-bg').value, txt: row.querySelector('.inp-txt').value, img: url,
+                    aviso: parseInt(row.querySelector('.inp-aviso').value), bg: r.querySelector('.inp-bg').value, txt: r.querySelector('.inp-txt').value, img: url,
                     customAudios: customAudios
                 });
             });
@@ -577,7 +590,7 @@
         function tick(){
             if(estado!=="RODANDO" && estado!=="INTERVALO") return;
             
-            // Verifica Áudios Customizados (Se áudio global ativado)
+            // Verifica Áudios Customizados
             if(estado === "RODANDO" && !emIntervalo && document.getElementById('chk-audio-global').checked) {
                 const fase = cronograma[indexAtual];
                 if(fase.customAudios) {
