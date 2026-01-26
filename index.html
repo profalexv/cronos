@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.37</title>
+    <title>cronos@alexandre.pro.br v1.38</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -65,15 +65,18 @@
         
         #titulo-fase { font-size: 2.5rem; margin: 0; text-transform: uppercase; color: #fff; letter-spacing: 2px; position: relative; z-index: 1; }
         
-        /* ETIQUETA FIM (Sobreposta) */
+        /* ETIQUETA FIM (Sobreposta e Gigante) */
         #lbl-fim { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 150px; 
+            position: absolute; top: 0; left: 0; width: 100%; height: 160px; /* Cobre o título */
             display: flex; align-items: center; justify-content: center;
             font-size: 8rem; color: #ff4444; font-weight: 900; 
-            background: rgba(0,0,0,0.85); 
+            background: rgba(0,0,0,0.95); /* Fundo quase sólido para tapar */
             z-index: 50; border-radius: 20px 20px 0 0;
             line-height: 1; text-transform: uppercase;
+            /* Garante que não esteja visível por padrão */
+            opacity: 0; pointer-events: none; 
         }
+        #lbl-fim.ativo { opacity: 1; }
 
         #timer-principal { font-size: 9rem; margin: 0; font-weight: bold; line-height: 1; font-variant-numeric: tabular-nums; position: relative; z-index: 1; }
         #rodape-info { margin-top: 15px; font-size: 1.2rem; color: #aaa; border-top: 1px solid #555; padding-top: 10px; display: flex; justify-content: space-between;}
@@ -113,20 +116,24 @@
             0%, 100% { background-color: #300000; } 50% { background-color: #aa0000; } 
         }
 
-        /* ANIMAÇÕES DA TARJA FIM (Correção: Visibility não reseta se não for removido) */
-        .anim-slow { animation: blink-vis 1s infinite; }
-        .anim-med { animation: blink-vis 0.5s infinite; }
-        .anim-fast { animation: blink-vis 0.2s infinite; }
-        .anim-panic-color { animation: blink-alt-color 0.2s infinite; }
-
-        @keyframes blink-vis { 0%, 100% { visibility: visible; } 50% { visibility: hidden; } }
+        /* ANIMAÇÕES EXCLUSIVAS PARA A TARJA FIM (Usando Opacity para garantir funcionamento) */
+        @keyframes flash-slow { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        @keyframes flash-med { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        @keyframes flash-fast { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
         
-        @keyframes blink-alt-color { 
-            0% { color: #ff4444; visibility: visible; } 
-            49% { color: #ff4444; visibility: visible; }
-            50% { color: var(--txt-color); visibility: visible; }
-            100% { color: var(--txt-color); visibility: visible; }
+        /* Alterna Cor e Opacidade */
+        @keyframes flash-panic-color { 
+            0% { color: #ff4444; opacity: 1; }
+            49% { color: #ff4444; opacity: 1; }
+            50% { color: var(--txt-color); opacity: 1; } 
+            100% { color: var(--txt-color); opacity: 1; }
         }
+
+        .anim-slow { animation: flash-slow 1s infinite; }
+        .anim-med { animation: flash-med 0.5s infinite; }
+        .anim-fast { animation: flash-fast 0.2s infinite; }
+        .anim-panic { animation: flash-panic-color 0.2s infinite; }
+
     </style>
 </head>
 <body>
@@ -177,7 +184,7 @@
         <div class="conteudo-box" id="box-principal">
             <h2 id="titulo-fase">...</h2>
             
-            <div id="lbl-fim" class="hidden">FIM</div>
+            <div id="lbl-fim">FIM</div>
 
             <div id="area-timer" data-tooltip="Tempo restante">
                 <div id="timer-principal">00:00</div>
@@ -362,7 +369,8 @@
             if(indexAtual >= cronograma.length - 1) btnAv.classList.add('hidden');
             else btnAv.classList.remove('hidden');
 
-            document.getElementById('lbl-fim').classList.add('hidden');
+            const elFim = document.getElementById('lbl-fim');
+            elFim.classList.remove('ativo', 'anim-slow', 'anim-med', 'anim-fast', 'anim-panic');
 
             if(intervaloTimer) clearInterval(intervaloTimer); intervaloTimer=setInterval(tick,1000); tick();
         }
@@ -409,21 +417,21 @@
             elFim.style.setProperty('--txt-color', cronograma[indexAtual].txt);
             
             if (tempo > -60) {
-                elFim.classList.add('hidden'); 
-                elFim.className = "hidden"; 
+                elFim.classList.remove('ativo'); 
                 return;
             }
 
-            elFim.classList.remove('hidden');
+            elFim.classList.add('ativo');
             
             let novaClasse = 'anim-slow';
-            if (tempo <= -150) novaClasse = 'anim-panic-color';
+            if (tempo <= -150) novaClasse = 'anim-panic';
             else if (tempo <= -120) novaClasse = 'anim-fast';
             else if (tempo <= -90) novaClasse = 'anim-med';
 
+            // IMPORTANT: Forçar o navegador a reiniciar a animação se a classe mudou
             if (!elFim.classList.contains(novaClasse)) {
-                elFim.classList.remove('anim-slow', 'anim-med', 'anim-fast', 'anim-panic-color');
-                void elFim.offsetWidth;
+                elFim.classList.remove('anim-slow', 'anim-med', 'anim-fast', 'anim-panic');
+                void elFim.offsetWidth; // TRICK: Força Reflow/Repaint
                 elFim.classList.add(novaClasse);
             }
         }
@@ -488,8 +496,8 @@
         
         function acaoReiniciarFase(){ 
             tempoRestante=cronograma[indexAtual].segundosFinais; 
-            document.getElementById('lbl-fim').classList.add('hidden');
-            document.getElementById('lbl-fim').className = 'hidden'; 
+            const elFim = document.getElementById('lbl-fim');
+            elFim.classList.remove('ativo', 'anim-slow', 'anim-med', 'anim-fast', 'anim-panic');
             document.getElementById('display-screen').classList.remove('bg-panic');
             const el = document.getElementById('timer-principal');
             el.classList.remove('piscando-vermelho', 'piscando-cor');
@@ -555,7 +563,8 @@
             const d=document.getElementById('display-screen'); 
             d.style.background="#000"; d.style.backgroundImage='none'; d.classList.remove('bg-panic');
             document.getElementById('titulo-fase').innerText="..."; 
-            document.getElementById('lbl-fim').classList.add('hidden');
+            const elFim = document.getElementById('lbl-fim');
+            elFim.classList.remove('ativo', 'anim-slow', 'anim-med', 'anim-fast', 'anim-panic');
             document.getElementById('timer-principal').innerText="00:00"; 
             document.getElementById('timer-principal').classList.remove('piscando-cor', 'piscando-vermelho');
             document.getElementById('btn-intervalo-manual').classList.add('hidden');
