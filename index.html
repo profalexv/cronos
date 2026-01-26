@@ -40,6 +40,11 @@
         .col-intervalo { background: rgba(255, 170, 0, 0.15); padding: 5px; border-radius: 4px; display: flex; gap: 5px; border: 1px dashed #666; }
         .hidden { display: none !important; }
 
+        /* REGRA INTELIGENTE: Esconde o intervalo da última linha da lista */
+        #lista-fases .fase-row:last-child .col-intervalo {
+            visibility: hidden; pointer-events: none;
+        }
+
         /* Botões Ação */
         .btn-x { background: #ff4444; color: white; border: none; width: 25px; height: 25px; border-radius: 50%; font-weight: bold; cursor: pointer; }
         .btn-add { background: #444; color: white; border: 1px solid #666; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
@@ -59,8 +64,8 @@
         #rodape-info { margin-top: 15px; font-size: 1.2rem; color: #aaa; border-top: 1px solid #555; padding-top: 10px; display: flex; justify-content: space-between;}
 
         /* Controles Playback */
-        .controles-play { margin-top: 20px; display: flex; gap: 10px; justify-content: center; }
-        .btn-ctrl { background: rgba(255,255,255,0.1); border: 1px solid #555; color: white; padding: 8px 20px; cursor: pointer; border-radius: 4px; }
+        .controles-play { margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .btn-ctrl { background: rgba(255,255,255,0.1); border: 1px solid #555; color: white; padding: 8px 15px; cursor: pointer; border-radius: 4px; min-width: 100px; transition: background 0.2s;}
         .btn-ctrl:hover { background: rgba(255,255,255,0.2); }
         
         .btn-proximo { background: #ffaa00; color: #000; font-weight: bold; font-size: 1.5rem; padding: 15px 30px; border: none; border-radius: 50px; cursor: pointer; animation: pulse 2s infinite; margin-top: 20px; }
@@ -91,7 +96,7 @@
 
     <div id="config-screen">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h2 style="margin:0; color:#00d2ff;">Cronometro Escola Sabatina Viva</h2>
+            <h2 style="margin:0; color:#00d2ff;">Cronometro Escola Sabatina Viva v1</h2>
             <div style="display:flex; gap:10px;">
                 <button class="btn-file" onclick="salvarConfiguracao()" data-tooltip="Baixa um arquivo com a programação atual para você abrir depois.">💾 Salvar Config</button>
                 <button class="btn-file" onclick="document.getElementById('file-input').click()" data-tooltip="Carrega um arquivo de programação salvo anteriormente.">📂 Abrir Config</button>
@@ -142,6 +147,8 @@
                 <button class="btn-ctrl" onclick="acaoPausar()" data-tooltip="Pausar cronômetro">⏸ Pausar</button>
                 <button class="btn-ctrl" onclick="acaoContinuar()" data-tooltip="Continuar cronômetro">▶ Continuar</button>
                 <button class="btn-ctrl" onclick="acaoReiniciarFase()" style="border-color:#ffaa00; color:#ffaa00;" data-tooltip="Reiniciar etapa atual">↺ Reiniciar Fase</button>
+                <button class="btn-ctrl" onclick="acaoAvançar()" style="border-color:#00d2ff; color:#00d2ff;" data-tooltip="Pula imediatamente para a próxima parte da programação.">⏭ Avançar</button>
+                <button class="btn-ctrl" onclick="encerrar()" style="border-color:#ff4444; color:#ff4444;" data-tooltip="Encerra a apresentação imediatamente e vai para a tela final.">⏹ Encerrar</button>
             </div>
         </div>
     </div>
@@ -160,146 +167,78 @@
     </div>
 
     <script>
-        // --- SISTEMA DE ARQUIVOS (SALVAR/ABRIR) ---
+        // --- SISTEMA DE ARQUIVOS ---
         function salvarConfiguracao() {
-            // Coleta dados
-            const dados = {
-                inicio: document.getElementById('hora-inicio').value,
-                fim: document.getElementById('hora-fim').value,
-                intervalosAtivos: document.getElementById('chk-intervalos').checked,
-                fases: []
-            };
-
-            // Varre as linhas da DOM
-            const linhas = document.querySelectorAll('.fase-row');
-            linhas.forEach(row => {
+            const dados = { inicio: document.getElementById('hora-inicio').value, fim: document.getElementById('hora-fim').value, intervalosAtivos: document.getElementById('chk-intervalos').checked, fases: [] };
+            document.querySelectorAll('.fase-row').forEach(row => {
                 dados.fases.push({
-                    titulo: row.querySelector('.inp-titulo').value,
-                    minutos: row.querySelector('.inp-tempo').value,
-                    redutivel: row.querySelector('.inp-redutivel').checked,
-                    intTempo: row.querySelector('.inp-int-tempo').value,
-                    intManual: row.querySelector('.inp-int-manual').checked,
-                    aviso: row.querySelector('.inp-aviso').value,
-                    bg: row.querySelector('.inp-bg').value,
-                    txt: row.querySelector('.inp-txt').value
+                    titulo: row.querySelector('.inp-titulo').value, minutos: row.querySelector('.inp-tempo').value, redutivel: row.querySelector('.inp-redutivel').checked,
+                    intTempo: row.querySelector('.inp-int-tempo').value, intManual: row.querySelector('.inp-int-manual').checked, aviso: row.querySelector('.inp-aviso').value,
+                    bg: row.querySelector('.inp-bg').value, txt: row.querySelector('.inp-txt').value
                 });
             });
-
-            const jsonStr = JSON.stringify(dados, null, 2);
-            const blob = new Blob([jsonStr], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            const data = new Date();
-            const nomeArquivo = `cronograma_${data.getHours()}h${data.getMinutes()}.json`;
-            a.href = url;
-            a.download = nomeArquivo;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            const blob = new Blob([JSON.stringify(dados, null, 2)], { type: "application/json" });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+            const d=new Date(); a.download = `cronograma_${d.getHours()}h${d.getMinutes()}.json`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
         }
 
         function carregarArquivo(input) {
-            const arquivo = input.files[0];
-            if (!arquivo) return;
-
-            const leitor = new FileReader();
-            leitor.onload = function(e) {
-                try {
-                    const dados = JSON.parse(e.target.result);
-                    aplicarConfiguracao(dados);
-                } catch (err) {
-                    alert("Erro ao ler arquivo: " + err.message);
-                }
-            };
-            leitor.readAsText(arquivo);
-            input.value = "";
+            const f = input.files[0]; if(!f) return;
+            const r = new FileReader();
+            r.onload = e => { try { aplicarConfiguracao(JSON.parse(e.target.result)); } catch(err){ alert("Erro: "+err.message); }};
+            r.readAsText(f); input.value = "";
         }
 
-        function aplicarConfiguracao(dados) {
-            document.getElementById('hora-inicio').value = dados.inicio;
-            document.getElementById('hora-fim').value = dados.fim;
-            document.getElementById('chk-intervalos').checked = dados.intervalosAtivos;
-            toggleIntervalosGlobais();
-
+        function aplicarConfiguracao(d) {
+            document.getElementById('hora-inicio').value = d.inicio; document.getElementById('hora-fim').value = d.fim;
+            document.getElementById('chk-intervalos').checked = d.intervalosAtivos; toggleIntervalosGlobais();
             document.getElementById('lista-fases').innerHTML = "";
-
-            dados.fases.forEach(f => {
+            d.fases.forEach(f => {
                 adicionarFase(f.titulo, f.minutos, f.redutivel, f.bg, f.txt);
-                const linhas = document.querySelectorAll('.fase-row');
-                const ultimaLinha = linhas[linhas.length - 1];
-                if (ultimaLinha) {
-                    ultimaLinha.querySelector('.inp-int-tempo').value = f.intTempo;
-                    ultimaLinha.querySelector('.inp-int-manual').checked = f.intManual;
-                    ultimaLinha.querySelector('.inp-aviso').value = f.aviso;
-                }
+                const l = document.querySelectorAll('.fase-row'); const last = l[l.length-1];
+                if(last){ last.querySelector('.inp-int-tempo').value=f.intTempo; last.querySelector('.inp-int-manual').checked=f.intManual; last.querySelector('.inp-aviso').value=f.aviso; }
             });
-            alert("Configuração carregada! (Nota: Selecione as imagens novamente, se houver)");
+            alert("Configuração carregada! (Nota: Selecione as imagens novamente)");
         }
 
-        // --- SISTEMA DE TOOLTIPS (3s Delay) ---
+        // --- TOOLTIPS 3s ---
         const tooltip = document.getElementById('custom-tooltip');
-        let tooltipTimeout;
-        let mouseX=0, mouseY=0;
-        
+        let tooltipTimeout, mouseX=0, mouseY=0;
         document.addEventListener('mousemove', e => {
             mouseX = e.clientX; mouseY = e.clientY;
             if(tooltip.style.display==='block'){ tooltip.style.top=(mouseY+15)+'px'; tooltip.style.left=(mouseX+15)+'px'; }
         });
         document.addEventListener('mouseover', e => {
             const t = e.target.closest('[data-tooltip]');
-            if(t){
-                tooltipTimeout = setTimeout(()=>{
-                    tooltip.innerText = t.getAttribute('data-tooltip');
-                    tooltip.style.top = (mouseY+15)+'px';
-                    tooltip.style.left = (mouseX+15)+'px';
-                    tooltip.style.display = 'block';
-                }, 3000);
-            }
+            if(t){ tooltipTimeout = setTimeout(()=>{ tooltip.innerText=t.getAttribute('data-tooltip'); tooltip.style.top=(mouseY+15)+'px'; tooltip.style.left=(mouseX+15)+'px'; tooltip.style.display='block'; }, 3000); }
         });
-        document.addEventListener('mouseout', e => {
-            const t = e.target.closest('[data-tooltip]');
-            if(t){ clearTimeout(tooltipTimeout); tooltip.style.display = 'none'; }
-        });
+        document.addEventListener('mouseout', e => { const t=e.target.closest('[data-tooltip]'); if(t){ clearTimeout(tooltipTimeout); tooltip.style.display='none'; }});
 
         // --- CORE ---
         let cronograma=[], indexAtual=0, tempoRestante=0, estado="PARADO", intervaloTimer=null, dataFimGlobal=null, emIntervalo=false;
 
         window.onload = function() {
-            const now = new Date();
-            const stdStart = new Date(now); stdStart.setHours(9,20,0,0);
+            const now = new Date(); const stdStart = new Date(now); stdStart.setHours(9,20,0,0);
             let sVal="09:20", eVal="10:15";
-
             if(now > stdStart){
-                const h=String(now.getHours()).padStart(2,'0'), m=String(now.getMinutes()).padStart(2,'0');
-                sVal = `${h}:${m}`;
-                const endD = new Date(now.getTime() + 55*60000);
-                eVal = `${String(endD.getHours()).padStart(2,'0')}:${String(endD.getMinutes()).padStart(2,'0')}`;
+                const h=String(now.getHours()).padStart(2,'0'), m=String(now.getMinutes()).padStart(2,'0'); sVal = `${h}:${m}`;
+                const endD = new Date(now.getTime() + 55*60000); eVal = `${String(endD.getHours()).padStart(2,'0')}:${String(endD.getMinutes()).padStart(2,'0')}`;
             }
-            document.getElementById('hora-inicio').value = sVal;
-            document.getElementById('hora-fim').value = eVal;
-
-            // FONTES BRANCAS EM TUDO
+            document.getElementById('hora-inicio').value = sVal; document.getElementById('hora-fim').value = eVal;
             adicionarFase("Confraternização", 10, true, "#ffcc00", "#ffffff");
             adicionarFase("Missão", 15, true, "#28a745", "#ffffff");
             adicionarFase("Estudo da Bíblia e Oração", 30, false, "#007bff", "#ffffff");
-
             setInterval(()=>{ document.getElementById('relogio-real').innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); },1000);
         };
 
-        function toggleIntervalosGlobais(){
-            const c = document.getElementById('chk-intervalos').checked;
-            document.querySelectorAll('.col-intervalo').forEach(e => c ? e.classList.remove('hidden') : e.classList.add('hidden'));
-        }
+        function toggleIntervalosGlobais(){ const c = document.getElementById('chk-intervalos').checked; document.querySelectorAll('.col-intervalo').forEach(e => c ? e.classList.remove('hidden') : e.classList.add('hidden')); }
 
         let idCount=0;
         function adicionarFase(tit="", min=10, red=true, bg="#000000", txt="#ffffff") {
-            idCount++;
-            const c = document.getElementById('lista-fases');
+            idCount++; const c = document.getElementById('lista-fases');
             const hide = document.getElementById('chk-intervalos').checked ? '' : 'hidden';
-            const div = document.createElement('div');
-            div.className = 'fase-row';
+            const div = document.createElement('div'); div.className = 'fase-row';
             div.innerHTML = `
                 <button class="btn-x" onclick="this.parentElement.remove()" data-tooltip="Remover">X</button>
                 <div class="campo" style="flex:2; min-width:150px;" data-tooltip="Nome da parte"><label>Título</label><input type="text" class="inp-titulo" value="${tit}"></div>
@@ -321,50 +260,30 @@
             const hI = document.getElementById('hora-inicio').value, hF = document.getElementById('hora-fim').value;
             const rows = document.querySelectorAll('.fase-row');
             if(!hI || !hF || rows.length===0) return alert("Configure os dados.");
-
-            const now = new Date();
-            const dIni = montarData(hI, now);
-            dataFimGlobal = montarData(hF, now);
-            if(dataFimGlobal < dIni) dataFimGlobal.setDate(dataFimGlobal.getDate()+1);
-
+            const now = new Date(); const dIni = montarData(hI, now);
+            dataFimGlobal = montarData(hF, now); if(dataFimGlobal < dIni) dataFimGlobal.setDate(dataFimGlobal.getDate()+1);
             cronograma = [];
             rows.forEach(r => {
-                const img = r.querySelector('.inp-img');
-                const url = img.files[0] ? URL.createObjectURL(img.files[0]) : "";
+                const img = r.querySelector('.inp-img'); const url = img.files[0] ? URL.createObjectURL(img.files[0]) : "";
                 cronograma.push({
-                    titulo: r.querySelector('.inp-titulo').value,
-                    minutosOrig: parseFloat(r.querySelector('.inp-tempo').value),
-                    segundosFinais: parseFloat(r.querySelector('.inp-tempo').value)*60,
-                    redutivel: r.querySelector('.inp-redutivel').checked,
-                    intSegundos: parseInt(r.querySelector('.inp-int-tempo').value)||0,
-                    intManual: r.querySelector('.inp-int-manual').checked,
-                    aviso: parseInt(r.querySelector('.inp-aviso').value),
-                    bg: r.querySelector('.inp-bg').value,
-                    txt: r.querySelector('.inp-txt').value,
-                    img: url
+                    titulo: r.querySelector('.inp-titulo').value, minutosOrig: parseFloat(r.querySelector('.inp-tempo').value),
+                    segundosFinais: parseFloat(r.querySelector('.inp-tempo').value)*60, redutivel: r.querySelector('.inp-redutivel').checked,
+                    intSegundos: parseInt(r.querySelector('.inp-int-tempo').value)||0, intManual: r.querySelector('.inp-int-manual').checked,
+                    aviso: parseInt(r.querySelector('.inp-aviso').value), bg: r.querySelector('.inp-bg').value, txt: r.querySelector('.inp-txt').value, img: url
                 });
             });
-
-            const plan = cronograma.reduce((a,b)=>a+b.minutosOrig,0);
-            const disp = (dataFimGlobal - now)/60000;
+            const plan = cronograma.reduce((a,b)=>a+b.minutosOrig,0); const disp = (dataFimGlobal - now)/60000;
             if(plan > disp || now > dIni) if(!calcularAjuste(now)) return;
-
-            document.getElementById('config-screen').style.display='none';
-            document.getElementById('display-screen').style.display='flex';
+            document.getElementById('config-screen').style.display='none'; document.getElementById('display-screen').style.display='flex';
             if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{});
             indexAtual=0; rodarFase(0);
         }
 
         function rodarFase(idx){
             if(idx>=cronograma.length) return encerrar();
-            indexAtual=idx;
-            const fase=cronograma[idx];
-            tempoRestante=fase.segundosFinais;
-            emIntervalo=false; estado="RODANDO";
+            indexAtual=idx; const fase=cronograma[idx]; tempoRestante=fase.segundosFinais; emIntervalo=false; estado="RODANDO";
             aplicarVisual(fase);
-            if(intervaloTimer) clearInterval(intervaloTimer);
-            intervaloTimer=setInterval(tick,1000);
-            tick();
+            if(intervaloTimer) clearInterval(intervaloTimer); intervaloTimer=setInterval(tick,1000); tick();
         }
 
         function tick(){
@@ -373,101 +292,48 @@
             const m=Math.floor(tempoRestante/60), s=tempoRestante%60;
             const el=document.getElementById('timer-principal');
             el.innerText=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-            
-            if(!emIntervalo){
-                if(tempoRestante<=cronograma[indexAtual].aviso && tempoRestante>0) el.classList.add('piscando');
-                else el.classList.remove('piscando');
-            }
-
+            if(!emIntervalo){ if(tempoRestante<=cronograma[indexAtual].aviso && tempoRestante>0) el.classList.add('piscando'); else el.classList.remove('piscando'); }
             if(tempoRestante<0){
                 clearInterval(intervaloTimer); tocarBip();
-                if(emIntervalo) rodarFase(indexAtual+1);
-                else gerenciarIntervalo();
+                if(emIntervalo) rodarFase(indexAtual+1); else gerenciarIntervalo();
             }
         }
 
         function gerenciarIntervalo(){
-            const f=cronograma[indexAtual];
-            const chk=document.getElementById('chk-intervalos').checked;
+            const f=cronograma[indexAtual]; const chk=document.getElementById('chk-intervalos').checked;
             if(chk && indexAtual+1 < cronograma.length){
-                if(f.intManual) entrarIntervaloManual();
-                else if(f.intSegundos>0) entrarIntervaloTempo(f.intSegundos);
-                else rodarFase(indexAtual+1);
+                if(f.intManual) entrarIntervaloManual(); else if(f.intSegundos>0) entrarIntervaloTempo(f.intSegundos); else rodarFase(indexAtual+1);
             } else rodarFase(indexAtual+1);
         }
 
-        function entrarIntervaloTempo(s){
-            emIntervalo=true; estado="INTERVALO"; tempoRestante=s;
-            configurarVisualIntervalo(true);
-            intervaloTimer=setInterval(tick,1000); tick();
-        }
-
-        function entrarIntervaloManual(){
-            emIntervalo=true; estado="PAUSADO";
-            configurarVisualIntervalo(false);
-            document.getElementById('btn-intervalo-manual').classList.remove('hidden');
-        }
-
-        function sairIntervaloManual(){
-            if(calcularAjuste(new Date())){
-                document.getElementById('btn-intervalo-manual').classList.add('hidden');
-                document.getElementById('timer-principal').classList.remove('hidden');
-                rodarFase(indexAtual+1);
-            }
-        }
-
+        function entrarIntervaloTempo(s){ emIntervalo=true; estado="INTERVALO"; tempoRestante=s; configurarVisualIntervalo(true); intervaloTimer=setInterval(tick,1000); tick(); }
+        function entrarIntervaloManual(){ emIntervalo=true; estado="PAUSADO"; configurarVisualIntervalo(false); document.getElementById('btn-intervalo-manual').classList.remove('hidden'); }
+        function sairIntervaloManual(){ if(calcularAjuste(new Date())){ document.getElementById('btn-intervalo-manual').classList.add('hidden'); document.getElementById('timer-principal').classList.remove('hidden'); rodarFase(indexAtual+1); }}
+        
         function configurarVisualIntervalo(isTempo){
-            const d=document.getElementById('display-screen');
-            d.style.backgroundImage='none'; d.style.backgroundColor='#222';
+            const d=document.getElementById('display-screen'); d.style.backgroundImage='none'; d.style.backgroundColor='#222';
             const t=document.getElementById('titulo-fase'); t.innerText="INTERVALO"; t.style.color="#ffaa00";
             const tm=document.getElementById('timer-principal'); tm.style.color="#ffaa00"; tm.classList.remove('piscando');
             if(!isTempo) tm.classList.add('hidden');
         }
 
         function acaoPausar(){ if(estado==="RODANDO"||estado==="INTERVALO"){ estado="PAUSADO"; clearInterval(intervaloTimer); document.getElementById('timer-principal').style.opacity="0.5"; }}
-        function acaoContinuar(){
-            if(estado==="PAUSADO"){
-                if(!document.getElementById('btn-intervalo-manual').classList.contains('hidden')) return;
-                if(!calcularAjuste(new Date())) return;
-                estado=emIntervalo?"INTERVALO":"RODANDO";
-                document.getElementById('timer-principal').style.opacity="1";
-                intervaloTimer=setInterval(tick,1000);
-            }
-        }
-        function acaoReiniciarFase(){
-            tempoRestante=cronograma[indexAtual].segundosFinais;
-            if(calcularAjuste(new Date())){
-                const m=Math.floor(tempoRestante/60), s=tempoRestante%60;
-                document.getElementById('timer-principal').innerText=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-                if(estado!=="RODANDO") acaoContinuar();
-            }
-        }
+        function acaoContinuar(){ if(estado==="PAUSADO"){ if(!document.getElementById('btn-intervalo-manual').classList.contains('hidden')) return; if(!calcularAjuste(new Date())) return; estado=emIntervalo?"INTERVALO":"RODANDO"; document.getElementById('timer-principal').style.opacity="1"; intervaloTimer=setInterval(tick,1000); }}
+        function acaoReiniciarFase(){ tempoRestante=cronograma[indexAtual].segundosFinais; if(calcularAjuste(new Date())){ const m=Math.floor(tempoRestante/60), s=tempoRestante%60; document.getElementById('timer-principal').innerText=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; if(estado!=="RODANDO") acaoContinuar(); }}
+        function acaoAvançar(){ rodarFase(indexAtual + 1); }
 
         function calcularAjuste(now){
             if(indexAtual>=cronograma.length-1) return true;
-            const disp=(dataFimGlobal-now)/1000;
-            if(disp<=0){ abrirModal(); return false; }
-            
-            let nec=tempoRestante;
-            for(let i=indexAtual+1; i<cronograma.length; i++) nec+=cronograma[i].segundosFinais;
+            const disp=(dataFimGlobal-now)/1000; if(disp<=0){ abrirModal(); return false; }
+            let nec=tempoRestante; for(let i=indexAtual+1; i<cronograma.length; i++) nec+=cronograma[i].segundosFinais;
             if(nec<=disp+5) return true;
-
             let pool=0, idxs=[];
             if(cronograma[indexAtual].redutivel && (estado==="RODANDO"||estado==="PAUSADO")){ pool+=tempoRestante; idxs.push(indexAtual); }
-            for(let i=indexAtual+1; i<cronograma.length; i++){
-                if(cronograma[i].redutivel){ pool+=cronograma[i].minutosOrig*60; idxs.push(i); }
-            }
-
-            let fixo=nec-pool, sobra=disp-fixo;
-            if(sobra<=0 || idxs.length===0){ abrirModal(); return false; }
-
+            for(let i=indexAtual+1; i<cronograma.length; i++){ if(cronograma[i].redutivel){ pool+=cronograma[i].minutosOrig*60; idxs.push(i); }}
+            let fixo=nec-pool, sobra=disp-fixo; if(sobra<=0 || idxs.length===0){ abrirModal(); return false; }
             const fator=sobra/pool;
-            idxs.forEach(i=>{
-                if(i===indexAtual) tempoRestante=Math.floor(tempoRestante*fator);
-                else cronograma[i].segundosFinais=Math.floor(cronograma[i].minutosOrig*60*fator);
-            });
-            notificarAjuste(`⚠️ Ajuste (-${((1-fator)*100).toFixed(0)}%)`);
-            return true;
+            idxs.forEach(i=>{ if(i===indexAtual) tempoRestante=Math.floor(tempoRestante*fator); else cronograma[i].segundosFinais=Math.floor(cronograma[i].minutosOrig*60*fator); });
+            notificarAjuste(`⚠️ Ajuste (-${((1-fator)*100).toFixed(0)}%)`); return true;
         }
 
         function abrirModal(){ document.getElementById('modal-decisao').style.display='flex'; }
@@ -476,15 +342,11 @@
             if(opt===1){ for(let i=indexAtual; i<cronograma.length; i++) cronograma[i].redutivel=true; if(calcularAjuste(new Date())) acaoContinuar(); }
             if(opt===2){ for(let i=indexAtual; i<cronograma.length-1; i++) cronograma[i].redutivel=false; cronograma[cronograma.length-1].redutivel=true; if(calcularAjuste(new Date())) acaoContinuar(); }
             if(opt===3){ notificarAjuste("⚠️ Prazo Ignorado"); if(!document.getElementById('btn-intervalo-manual').classList.contains('hidden')) sairIntervaloManual(); else acaoContinuar(); }
-            if(opt===4){
-                const n=prompt("Novo horário (HH:MM):", document.getElementById('hora-fim').value);
-                if(n){ dataFimGlobal=montarData(n,new Date()); if(dataFimGlobal<new Date()) dataFimGlobal.setDate(dataFimGlobal.getDate()+1); if(calcularAjuste(new Date())) acaoContinuar(); } else abrirModal();
-            }
+            if(opt===4){ const n=prompt("Novo horário (HH:MM):", document.getElementById('hora-fim').value); if(n){ dataFimGlobal=montarData(n,new Date()); if(dataFimGlobal<new Date()) dataFimGlobal.setDate(dataFimGlobal.getDate()+1); if(calcularAjuste(new Date())) acaoContinuar(); } else abrirModal(); }
         }
 
         function aplicarVisual(f){
-            const el=document.getElementById('display-screen');
-            el.style.backgroundColor=f.bg; el.style.backgroundImage=f.img?`url('${f.img}')`:'none';
+            const el=document.getElementById('display-screen'); el.style.backgroundColor=f.bg; el.style.backgroundImage=f.img?`url('${f.img}')`:'none';
             document.getElementById('btn-intervalo-manual').classList.add('hidden');
             document.getElementById('timer-principal').classList.remove('hidden');
             document.getElementById('titulo-fase').innerText=f.titulo; document.getElementById('titulo-fase').style.color=f.txt;
