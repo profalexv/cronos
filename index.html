@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.39</title>
+    <title>cronos@alexandre.pro.br v1.40</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -30,6 +30,10 @@
         .btn-file { background: #444; border: 1px solid #666; color: #fff; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; }
         .btn-file:hover { background: #555; border-color: #888; }
 
+        /* Checkbox customizado */
+        .chk-label { display: flex; align-items: center; gap: 5px; cursor: pointer; margin: 0; font-size: 0.9rem; }
+        .chk-input { width: 18px; height: 18px; cursor: pointer; }
+
         /* Inputs de Cor */
         input[type="color"] {
             -webkit-appearance: none; border: 1px solid #555; width: 50px; height: 40px; padding: 0;
@@ -45,6 +49,8 @@
         }
         
         .col-intervalo { background: rgba(255, 170, 0, 0.15); padding: 5px; border-radius: 4px; display: flex; gap: 5px; border: 1px dashed #666; }
+        .col-estouro { background: rgba(255, 68, 68, 0.15); padding: 5px; border-radius: 4px; display: flex; gap: 5px; border: 1px dashed #666; }
+        
         .hidden { display: none !important; }
 
         #lista-fases .fase-row:last-child .col-intervalo { visibility: hidden; pointer-events: none; }
@@ -63,6 +69,10 @@
 
         .conteudo-box { z-index: 10; text-align: center; padding: 40px; border-radius: 20px; background: rgba(20, 20, 20, 0.8); backdrop-filter: blur(5px); min-width: 60%; max-width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; }
         
+        #display-global-titulo {
+            font-size: 1.5rem; color: #fff; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; opacity: 0.8;
+        }
+
         #titulo-fase { font-size: 2.5rem; margin: 0; text-transform: uppercase; color: #fff; letter-spacing: 2px; position: relative; z-index: 1; }
         
         /* ETIQUETA FIM (Sobreposta e Gigante) */
@@ -70,10 +80,10 @@
             position: absolute; top: 0; left: 0; width: 100%; height: 160px; /* Cobre o título */
             display: flex; align-items: center; justify-content: center;
             font-size: 8rem; color: #ff4444; font-weight: 900; 
-            background: rgba(0,0,0,0.95); /* Fundo quase sólido para tapar */
+            background: rgba(0,0,0,0.95); 
             z-index: 50; border-radius: 20px 20px 0 0;
             line-height: 1; text-transform: uppercase;
-            opacity: 0; pointer-events: none; /* Escondido por padrão */
+            opacity: 0; pointer-events: none; 
         }
         #lbl-fim.ativo { opacity: 1; }
 
@@ -100,41 +110,29 @@
             display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.8); max-width: 250px; line-height: 1.4;
         }
 
-        /* --- ANIMAÇÕES DE ALERTA --- */
-        
-        /* 1. Piscar Suave (Alerta Pré-Fim na cor da fonte) */
+        /* --- ANIMAÇÕES --- */
         .piscando-cor { animation: pulse-opacity 1s infinite; }
         @keyframes pulse-opacity {
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.6; transform: scale(1.02); }
         }
 
-        /* 2. Piscar Vermelho (Estouro Padrão) */
         .piscando-vermelho { color: #ff4444 !important; animation: pulse-red 1s infinite; }
         @keyframes pulse-red { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); text-shadow: 0 0 20px red; } }
         
-        /* 3. Piscar Alternado (Estouro 3min+) - Alterna Vermelho/Original */
         .piscando-alerta-maximo { animation: flash-timer-panic 0.5s infinite; }
         @keyframes flash-timer-panic {
             0%, 49% { color: #ff4444; transform: scale(1.05); }
             50%, 100% { color: var(--txt-color); transform: scale(1); }
         }
 
-        /* 4. Piscar Fundo Crítico (30s de estouro) */
         .bg-panic { animation: bg-flash 1s infinite; }
         @keyframes bg-flash { 
             0%, 100% { background-color: #300000; } 50% { background-color: #aa0000; } 
         }
 
-        /* --- ANIMAÇÕES DA TARJA FIM (Lógica Strobe: 15% visivel, 85% invisivel) --- */
+        @keyframes flash-strobe { 0%, 15% { opacity: 1; } 16%, 100% { opacity: 0; } }
         
-        /* Padrão Strobe: Aparece, some, espera muito */
-        @keyframes flash-strobe { 
-            0%, 15% { opacity: 1; } 
-            16%, 100% { opacity: 0; } 
-        }
-        
-        /* Pânico Strobe: Vermelho -> Espera -> Original -> Espera (Para 5min+) */
         @keyframes flash-strobe-panic { 
             0%, 15% { color: #ff4444; opacity: 1; }
             16%, 49% { opacity: 0; }
@@ -142,7 +140,6 @@
             66%, 100% { opacity: 0; }
         }
 
-        /* Classes de Velocidade do FIM */
         .anim-slow { animation: flash-strobe 2.5s infinite; }
         .anim-med { animation: flash-strobe 1.5s infinite; }
         .anim-fast { animation: flash-strobe 0.5s infinite; }
@@ -160,10 +157,14 @@
             <div style="display:flex; align-items:center; gap:10px; flex-grow:1; margin-right:20px;">
                 <input type="text" id="global-titulo" value="Escola Sabatina Viva" data-tooltip="Clique para editar o título do evento.">
                 <input type="color" id="global-cor-titulo" value="#00d2ff" style="width:40px; height:35px; border:none;" data-tooltip="Alterar cor do título.">
+                
+                <label class="chk-label" data-tooltip="Se marcado, exibe este título na tela de apresentação.">
+                    <input type="checkbox" id="chk-exibir-titulo" class="chk-input"> Exibir
+                </label>
             </div>
             <div style="display:flex; gap:10px;">
-                <button class="btn-file" onclick="salvarConfiguracao()" data-tooltip="Salvar a programação com o nome do título.">💾 Salvar</button>
-                <button class="btn-file" onclick="document.getElementById('file-input').click()" data-tooltip="Carregar uma programação salva.">📂 Abrir</button>
+                <button class="btn-file" onclick="salvarConfiguracao()" data-tooltip="Salvar a programação.">💾 Salvar</button>
+                <button class="btn-file" onclick="document.getElementById('file-input').click()" data-tooltip="Carregar programação.">📂 Abrir</button>
             </div>
         </div>
         
@@ -172,13 +173,19 @@
                 <label>Início Planejado</label>
                 <input type="time" id="hora-inicio">
             </div>
-            <div class="campo" data-tooltip="Horário limite para encerramento.">
+            <div class="campo" data-tooltip="Horário limite.">
                 <label>Fim Absoluto</label>
                 <input type="time" id="hora-fim">
             </div>
-            <div class="campo" style="flex-direction: row; align-items: center; gap: 10px; padding-bottom: 5px;" data-tooltip="Habilita pausas entre as partes.">
-                <input type="checkbox" id="chk-intervalos" onchange="toggleIntervalosGlobais()" style="width:20px; height:20px;">
-                <label style="margin:0; cursor:pointer;" for="chk-intervalos">Habilitar Intervalos</label>
+            
+            <div class="campo" style="flex-direction: row; align-items: center; gap: 20px; padding-bottom: 5px;">
+                <label class="chk-label" data-tooltip="Habilita a lógica de intervalos entre as partes.">
+                    <input type="checkbox" id="chk-intervalos" onchange="toggleIntervalosGlobais()" class="chk-input"> Intervalos
+                </label>
+                
+                <label class="chk-label" data-tooltip="Habilita a possibilidade de estourar o tempo em fases individuais (contagem negativa).">
+                    <input type="checkbox" id="chk-estouro-global" onchange="toggleEstouroGlobal()" class="chk-input"> Permitir Estouro
+                </label>
             </div>
         </div>
 
@@ -186,16 +193,19 @@
 
         <div style="display:flex; gap:15px; margin-top:20px; padding-bottom:50px;">
             <button class="btn-add" onclick="adicionarFase()" data-tooltip="Adiciona nova linha.">+ Nova Etapa</button>
-            <button class="btn-go" onclick="iniciarApresentacao()" data-tooltip="Inicia o cronômetro em tela cheia.">INICIAR ▷</button>
+            <button class="btn-go" onclick="iniciarApresentacao()" data-tooltip="Inicia o cronômetro.">INICIAR ▷</button>
         </div>
     </div>
 
     <div id="display-screen">
-        <button id="btn-sair" onclick="encerrar()" title="Sair" data-tooltip="Sair para configuração">✕</button>
+        <button id="btn-sair" onclick="encerrar()" title="Sair" data-tooltip="Sair">✕</button>
         <div class="overlay"></div>
         <div id="relogio-real" data-tooltip="Hora Atual">--:--</div>
 
         <div class="conteudo-box" id="box-principal">
+            
+            <h1 id="display-global-titulo" class="hidden"></h1>
+
             <h2 id="titulo-fase">...</h2>
             
             <div id="lbl-fim">FIM</div>
@@ -214,8 +224,8 @@
                 <button id="btn-pausar" class="btn-ctrl" onclick="acaoPausar()" data-tooltip="Pausar ou Parar o tempo">⏸ PAUSAR</button>
                 <button id="btn-continuar" class="btn-ctrl hidden" onclick="acaoContinuar()" data-tooltip="Continuar contagem">▶ Continuar</button>
                 <button class="btn-ctrl" onclick="acaoReiniciarFase()" style="border-color:#ffaa00; color:#ffaa00;" data-tooltip="Reiniciar etapa atual">↺ Reiniciar</button>
-                <button id="btn-avancar" class="btn-ctrl" onclick="acaoAvançar()" style="border-color:#00d2ff; color:#00d2ff;" data-tooltip="Pular para a próxima etapa.">⏭ Avançar</button>
-                <button class="btn-ctrl" onclick="encerrar()" style="border-color:#ff4444; color:#ff4444;" data-tooltip="Voltar ao menu de configuração.">⏹ Encerrar</button>
+                <button id="btn-avancar" class="btn-ctrl" onclick="acaoAvançar()" style="border-color:#00d2ff; color:#00d2ff;" data-tooltip="Pular etapa.">⏭ Avançar</button>
+                <button class="btn-ctrl" onclick="encerrar()" style="border-color:#ff4444; color:#ff4444;" data-tooltip="Sair.">⏹ Encerrar</button>
             </div>
         </div>
     </div>
@@ -241,13 +251,18 @@
             const nomeArquivo = titulo.replace(/[^a-z0-9]/gi, '_').toLowerCase() + ".json";
             const dados = { 
                 tituloGlobal: titulo, corGlobal: document.getElementById('global-cor-titulo').value,
+                exibirTitulo: document.getElementById('chk-exibir-titulo').checked,
                 inicio: document.getElementById('hora-inicio').value, fim: document.getElementById('hora-fim').value, 
-                intervalosAtivos: document.getElementById('chk-intervalos').checked, fases: [] 
+                intervalosAtivos: document.getElementById('chk-intervalos').checked,
+                estouroGlobal: document.getElementById('chk-estouro-global').checked,
+                fases: [] 
             };
             document.querySelectorAll('.fase-row').forEach(row => {
                 dados.fases.push({
                     titulo: row.querySelector('.inp-titulo').value, minutos: row.querySelector('.inp-tempo').value, redutivel: row.querySelector('.inp-redutivel').checked,
-                    intTempo: row.querySelector('.inp-int-tempo').value, intManual: row.querySelector('.inp-int-manual').checked, aviso: row.querySelector('.inp-aviso').value,
+                    intTempo: row.querySelector('.inp-int-tempo').value, intManual: row.querySelector('.inp-int-manual').checked, 
+                    estouroFase: row.querySelector('.inp-estouro-fase').checked,
+                    aviso: row.querySelector('.inp-aviso').value,
                     bg: row.querySelector('.inp-bg').value, txt: row.querySelector('.inp-txt').value
                 });
             });
@@ -265,14 +280,26 @@
         }
 
         function aplicarConfiguracao(d) {
-            if(d.tituloGlobal) { document.getElementById('global-titulo').value = d.tituloGlobal; document.getElementById('global-cor-titulo').value = d.corGlobal || "#00d2ff"; document.getElementById('global-titulo').style.color = d.corGlobal || "#00d2ff"; }
+            if(d.tituloGlobal) { 
+                document.getElementById('global-titulo').value = d.tituloGlobal; 
+                document.getElementById('global-cor-titulo').value = d.corGlobal || "#00d2ff"; 
+                document.getElementById('global-titulo').style.color = d.corGlobal || "#00d2ff"; 
+                document.getElementById('chk-exibir-titulo').checked = d.exibirTitulo || false;
+            }
             document.getElementById('hora-inicio').value = d.inicio; document.getElementById('hora-fim').value = d.fim;
             document.getElementById('chk-intervalos').checked = d.intervalosAtivos; toggleIntervalosGlobais();
+            document.getElementById('chk-estouro-global').checked = d.estouroGlobal || false; toggleEstouroGlobal();
+
             document.getElementById('lista-fases').innerHTML = "";
             d.fases.forEach(f => {
                 adicionarFase(f.titulo, f.minutos, f.redutivel, f.bg, f.txt);
                 const l = document.querySelectorAll('.fase-row'); const last = l[l.length-1];
-                if(last){ last.querySelector('.inp-int-tempo').value=f.intTempo; last.querySelector('.inp-int-manual').checked=f.intManual; last.querySelector('.inp-aviso').value=f.aviso; }
+                if(last){ 
+                    last.querySelector('.inp-int-tempo').value=f.intTempo; 
+                    last.querySelector('.inp-int-manual').checked=f.intManual; 
+                    last.querySelector('.inp-estouro-fase').checked=f.estouroFase || false;
+                    last.querySelector('.inp-aviso').value=f.aviso; 
+                }
             });
             alert("Configuração carregada! (Nota: Selecione as imagens novamente)");
         }
@@ -300,18 +327,26 @@
         };
 
         function toggleIntervalosGlobais(){ const c = document.getElementById('chk-intervalos').checked; document.querySelectorAll('.col-intervalo').forEach(e => c ? e.classList.remove('hidden') : e.classList.add('hidden')); }
+        function toggleEstouroGlobal(){ const c = document.getElementById('chk-estouro-global').checked; document.querySelectorAll('.col-estouro').forEach(e => c ? e.classList.remove('hidden') : e.classList.add('hidden')); }
 
         let idCount=0;
         function adicionarFase(tit="", min=10, red=true, bg="#000000", txt="#ffffff") {
             idCount++; const c = document.getElementById('lista-fases');
-            const hide = document.getElementById('chk-intervalos').checked ? '' : 'hidden';
+            const hideInt = document.getElementById('chk-intervalos').checked ? '' : 'hidden';
+            const hideEst = document.getElementById('chk-estouro-global').checked ? '' : 'hidden';
+            
             const div = document.createElement('div'); div.className = 'fase-row';
             div.innerHTML = `
                 <button class="btn-x" onclick="this.parentElement.remove()" data-tooltip="Remover">X</button>
                 <div class="campo" style="flex:2; min-width:150px;" data-tooltip="Nome da parte"><label>Título</label><input type="text" class="inp-titulo" value="${tit}"></div>
                 <div class="campo" style="width:70px;" data-tooltip="Duração (min)"><label>Min</label><input type="number" class="inp-tempo" value="${min}" min="1"></div>
                 <div class="campo" style="align-items:center;" data-tooltip="Redutível?"><label>Redut?</label><input type="checkbox" class="inp-redutivel" ${red?'checked':''} style="width:20px; height:20px;"></div>
-                <div class="col-intervalo ${hide}">
+                
+                <div class="col-estouro ${hideEst}">
+                    <div class="campo" style="align-items:center;" data-tooltip="Se marcado, o tempo estoura e conta negativo. Ignora intervalo."><label>Estouro?</label><input type="checkbox" class="inp-estouro-fase" style="width:20px; height:20px;"></div>
+                </div>
+
+                <div class="col-intervalo ${hideInt}">
                     <div class="campo" style="width:60px;" data-tooltip="Intervalo (s)"><label>Pausa</label><input type="number" class="inp-int-tempo" value="30"></div>
                     <div class="campo" style="align-items:center;" data-tooltip="Esperar clique?"><label>Clique?</label><input type="checkbox" class="inp-int-manual" style="width:20px; height:20px;"></div>
                 </div>
@@ -336,6 +371,7 @@
                     titulo: r.querySelector('.inp-titulo').value, minutosOrig: parseFloat(r.querySelector('.inp-tempo').value),
                     segundosFinais: parseFloat(r.querySelector('.inp-tempo').value)*60, redutivel: r.querySelector('.inp-redutivel').checked,
                     intSegundos: parseInt(r.querySelector('.inp-int-tempo').value)||0, intManual: r.querySelector('.inp-int-manual').checked,
+                    permitirEstouro: r.querySelector('.inp-estouro-fase').checked,
                     aviso: parseInt(r.querySelector('.inp-aviso').value), bg: r.querySelector('.inp-bg').value, txt: r.querySelector('.inp-txt').value, img: url
                 });
             });
@@ -343,6 +379,17 @@
             document.getElementById('config-screen').style.display='none'; 
             document.getElementById('display-screen').style.display='flex';
             if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{});
+
+            // Configurar Título Global
+            const exibirTitulo = document.getElementById('chk-exibir-titulo').checked;
+            const elTit = document.getElementById('display-global-titulo');
+            if(exibirTitulo) {
+                elTit.innerText = document.getElementById('global-titulo').value;
+                elTit.style.color = document.getElementById('global-cor-titulo').value;
+                elTit.classList.remove('hidden');
+            } else {
+                elTit.classList.add('hidden');
+            }
 
             atualizarBotoes(false); 
 
@@ -410,49 +457,77 @@
                 if (tempoRestante > 0 && tempoRestante <= aviso) {
                     el.classList.add('piscando-cor');
                 } else if (tempoRestante <= 0) {
-                    
-                    if (tempoRestante > -180) { // Menos de 3 min
+                    if (tempoRestante > -180) { 
                         el.classList.add('piscando-vermelho');
-                    } else { // Mais de 3 min (Timer alterna cor)
+                    } else { 
                         el.classList.add('piscando-alerta-maximo');
                     }
-
                     if (tempoRestante <= -30) bg.classList.add('bg-panic');
                 }
             }
 
             if(tempoRestante < 0) {
-                if(indexAtual < cronograma.length - 1) {
+                // REGRA DE ESTOURO: 
+                // Se for a última fase OU se a fase atual permitir estouro
+                if(indexAtual === cronograma.length - 1 || cronograma[indexAtual].permitirEstouro) {
+                    clearInterval(intervaloTimer); tocarBip(); // Toca bip 1 vez ao zerar
+                    
+                    // Se não for a ultima, trata como fim mas sem a etiqueta FIM gigante (usa alertas visuais)
+                    // Se for a última, usa etiqueta FIM
+                    if(indexAtual === cronograma.length - 1) {
+                        gerenciarFimNaUltima(tempoRestante);
+                    }
+                    
+                    // Continua rodando no negativo
+                    intervaloTimer = setInterval(tickNegativo, 1000); 
+                } else {
+                    // Comportamento padrão: vai pro intervalo ou proxima
                     clearInterval(intervaloTimer); tocarBip();
                     if(emIntervalo) rodarFase(indexAtual+1); else gerenciarIntervalo();
-                } else {
-                    gerenciarFimNaUltima(tempoRestante);
                 }
+            }
+        }
+
+        // Função separada para quando já está no negativo para evitar re-trigger de bips ou intervalos
+        function tickNegativo() {
+            if(estado!=="RODANDO") return;
+            tempoRestante--;
+            
+            const abs = Math.abs(tempoRestante);
+            const m = Math.floor(abs / 60); const s = abs % 60;
+            const el = document.getElementById('timer-principal');
+            el.innerText = `-${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            
+            const bg = document.getElementById('display-screen');
+            el.classList.remove('piscando-cor', 'piscando-vermelho', 'piscando-alerta-maximo');
+            bg.classList.remove('bg-panic');
+
+            // Aplica visuais de estouro
+            if (tempoRestante > -180) el.classList.add('piscando-vermelho');
+            else el.classList.add('piscando-alerta-maximo');
+            
+            if (tempoRestante <= -30) bg.classList.add('bg-panic');
+
+            if(indexAtual === cronograma.length - 1) {
+                gerenciarFimNaUltima(tempoRestante);
             }
         }
 
         function gerenciarFimNaUltima(tempo) {
             const elFim = document.getElementById('lbl-fim');
-            // Injeta a cor original para a animação de pânico (5min)
             elFim.style.setProperty('--txt-color', cronograma[indexAtual].txt);
             
-            // Lógica de 1 minuto (-60s)
-            if (tempo > -60) {
-                elFim.classList.remove('ativo'); 
-                return;
-            }
+            if (tempo > -60) { elFim.classList.remove('ativo'); return; }
 
             elFim.classList.add('ativo');
-            
             let novaClasse = 'anim-slow';
-            if (tempo <= -300) novaClasse = 'anim-panic'; // 5 min
-            else if (tempo <= -180) novaClasse = 'anim-fast'; // 3 min
-            else if (tempo <= -120) novaClasse = 'anim-med'; // 2 min
+            if (tempo <= -300) novaClasse = 'anim-panic';
+            else if (tempo <= -180) novaClasse = 'anim-fast';
+            else if (tempo <= -120) novaClasse = 'anim-med';
 
             if (!elFim.classList.contains(novaClasse)) {
                 elFim.classList.remove('anim-slow', 'anim-med', 'anim-fast', 'anim-panic');
-                void elFim.offsetWidth; // Força reinicio da anim
-                elFim.classList.add(novaClasse);
+                void elFim.offsetWidth; elFim.classList.add(novaClasse);
             }
         }
 
@@ -504,7 +579,17 @@
                     return;
                 }
                 if(!document.getElementById('btn-intervalo-manual').classList.contains('hidden')) return; 
-                if(tempoRestante >= 0 && !calcularAjuste(new Date())) return; 
+                // Se estamos negativos, apenas continua o tickNegativo
+                if(tempoRestante < 0 && (cronograma[indexAtual].permitirEstouro || indexAtual === cronograma.length-1)) {
+                    estado="RODANDO";
+                    document.getElementById('timer-principal').style.opacity="1"; 
+                    document.getElementById('lbl-fim').style.animationPlayState = 'running';
+                    atualizarBotoes(true);
+                    intervaloTimer=setInterval(tickNegativo,1000);
+                    return;
+                }
+
+                if(!calcularAjuste(new Date())) return; 
                 
                 estado=emIntervalo?"INTERVALO":"RODANDO"; 
                 document.getElementById('timer-principal').style.opacity="1"; 
@@ -516,15 +601,11 @@
         
         function acaoReiniciarFase(){ 
             tempoRestante=cronograma[indexAtual].segundosFinais; 
-            const elFim = document.getElementById('lbl-fim');
-            elFim.classList.remove('ativo', 'anim-slow', 'anim-med', 'anim-fast', 'anim-panic');
+            document.getElementById('lbl-fim').classList.remove('ativo', 'anim-slow', 'anim-med', 'anim-fast', 'anim-panic');
             document.getElementById('display-screen').classList.remove('bg-panic');
             const el = document.getElementById('timer-principal');
             el.classList.remove('piscando-vermelho', 'piscando-cor', 'piscando-alerta-maximo');
-            // Reinjeta cor original
-            const fase = cronograma[indexAtual];
-            el.style.color = fase.txt;
-            el.style.setProperty('--txt-color', fase.txt);
+            el.style.color = cronograma[indexAtual].txt;
 
             if(calcularAjuste(new Date())){ 
                 const m=Math.floor(tempoRestante/60), s=tempoRestante%60; 
@@ -572,7 +653,7 @@
             
             const tm = document.getElementById('timer-principal');
             tm.style.color=f.txt;
-            tm.style.setProperty('--txt-color', f.txt); // Guarda para animações futuras
+            tm.style.setProperty('--txt-color', f.txt); 
 
             document.getElementById('txt-status').style.color=f.txt;
             const p=document.getElementById('txt-proximo'); p.style.color=f.txt;
