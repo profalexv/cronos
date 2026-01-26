@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.36</title>
+    <title>cronos@alexandre.pro.br v1.37</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -67,10 +67,10 @@
         
         /* ETIQUETA FIM (Sobreposta) */
         #lbl-fim { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 150px; /* Cobre a área do título */
+            position: absolute; top: 0; left: 0; width: 100%; height: 150px; 
             display: flex; align-items: center; justify-content: center;
             font-size: 8rem; color: #ff4444; font-weight: 900; 
-            background: rgba(0,0,0,0.85); /* Fundo escuro para tapar o título */
+            background: rgba(0,0,0,0.85); 
             z-index: 50; border-radius: 20px 20px 0 0;
             line-height: 1; text-transform: uppercase;
         }
@@ -99,31 +99,28 @@
         }
 
         /* --- ANIMAÇÕES --- */
-        /* Piscar Suave (Alerta na cor da fonte) */
         .piscando-cor { animation: pulse-opacity 1s infinite; }
         @keyframes pulse-opacity {
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.6; transform: scale(1.02); }
         }
 
-        /* Piscar Vermelho (Estouro) */
         .piscando-vermelho { color: #ff4444 !important; animation: pulse-red 1s infinite; }
         @keyframes pulse-red { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); text-shadow: 0 0 20px red; } }
         
-        /* Piscar Fundo Crítico */
         .bg-panic { animation: bg-flash 1s infinite; }
         @keyframes bg-flash { 
             0%, 100% { background-color: #300000; } 50% { background-color: #aa0000; } 
         }
 
-        /* ANIMAÇÕES DA TARJA FIM */
+        /* ANIMAÇÕES DA TARJA FIM (Correção: Visibility não reseta se não for removido) */
         .anim-slow { animation: blink-vis 1s infinite; }
         .anim-med { animation: blink-vis 0.5s infinite; }
         .anim-fast { animation: blink-vis 0.2s infinite; }
         .anim-panic-color { animation: blink-alt-color 0.2s infinite; }
 
         @keyframes blink-vis { 0%, 100% { visibility: visible; } 50% { visibility: hidden; } }
-        /* Alterna entre vermelho e a cor original (var settada via JS) */
+        
         @keyframes blink-alt-color { 
             0% { color: #ff4444; visibility: visible; } 
             49% { color: #ff4444; visibility: visible; }
@@ -409,23 +406,25 @@
 
         function gerenciarFimNaUltima(tempo) {
             const elFim = document.getElementById('lbl-fim');
-            // Set cor original para animação
             elFim.style.setProperty('--txt-color', cronograma[indexAtual].txt);
             
-            if (tempo <= -60) { // 1 min atraso
-                elFim.classList.remove('hidden');
-                // Remove todas anims
+            if (tempo > -60) {
+                elFim.classList.add('hidden'); 
+                elFim.className = "hidden"; 
+                return;
+            }
+
+            elFim.classList.remove('hidden');
+            
+            let novaClasse = 'anim-slow';
+            if (tempo <= -150) novaClasse = 'anim-panic-color';
+            else if (tempo <= -120) novaClasse = 'anim-fast';
+            else if (tempo <= -90) novaClasse = 'anim-med';
+
+            if (!elFim.classList.contains(novaClasse)) {
                 elFim.classList.remove('anim-slow', 'anim-med', 'anim-fast', 'anim-panic-color');
-                
-                if (tempo <= -150) { // 2.5 min
-                    elFim.classList.add('anim-panic-color');
-                } else if (tempo <= -120) { // 2 min
-                    elFim.classList.add('anim-fast');
-                } else if (tempo <= -90) { // 1.5 min
-                    elFim.classList.add('anim-med');
-                } else {
-                    elFim.classList.add('anim-slow');
-                }
+                void elFim.offsetWidth;
+                elFim.classList.add(novaClasse);
             }
         }
 
@@ -462,7 +461,6 @@
             estado="PAUSADO"; clearInterval(intervaloTimer); 
             document.getElementById('timer-principal').style.opacity="0.5";
             document.getElementById('display-screen').classList.remove('bg-panic');
-            // Congela animação do FIM se estiver visivel
             document.getElementById('lbl-fim').style.animationPlayState = 'paused';
             atualizarBotoes(false);
         }
@@ -482,7 +480,6 @@
                 
                 estado=emIntervalo?"INTERVALO":"RODANDO"; 
                 document.getElementById('timer-principal').style.opacity="1"; 
-                // Retoma anim FIM
                 document.getElementById('lbl-fim').style.animationPlayState = 'running';
                 atualizarBotoes(true);
                 intervaloTimer=setInterval(tick,1000); 
@@ -492,7 +489,7 @@
         function acaoReiniciarFase(){ 
             tempoRestante=cronograma[indexAtual].segundosFinais; 
             document.getElementById('lbl-fim').classList.add('hidden');
-            document.getElementById('lbl-fim').className = 'hidden'; // Reset classes
+            document.getElementById('lbl-fim').className = 'hidden'; 
             document.getElementById('display-screen').classList.remove('bg-panic');
             const el = document.getElementById('timer-principal');
             el.classList.remove('piscando-vermelho', 'piscando-cor');
