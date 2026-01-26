@@ -168,12 +168,10 @@
         let mouseX = 0;
         let mouseY = 0;
         
-        // Rastreia o mouse para posicionar o tooltip quando o tempo acabar
         document.addEventListener('mousemove', function(e) {
             mouseX = e.clientX;
             mouseY = e.clientY;
             
-            // Se o tooltip já estiver visível, ele segue o mouse
             if (tooltip.style.display === 'block') {
                 tooltip.style.top = (mouseY + 15) + 'px';
                 tooltip.style.left = (mouseX + 15) + 'px';
@@ -183,20 +181,18 @@
         document.addEventListener('mouseover', function(e) {
             const target = e.target.closest('[data-tooltip]');
             if (target) {
-                // Inicia contagem de 3 segundos
                 tooltipTimeout = setTimeout(() => {
                     tooltip.innerText = target.getAttribute('data-tooltip');
                     tooltip.style.top = (mouseY + 15) + 'px';
                     tooltip.style.left = (mouseX + 15) + 'px';
                     tooltip.style.display = 'block';
-                }, 3000); // 3000ms = 3 segundos
+                }, 3000); 
             }
         });
 
         document.addEventListener('mouseout', function(e) {
             const target = e.target.closest('[data-tooltip]');
             if (target) {
-                // Cancela o timer se o mouse sair antes dos 3s
                 clearTimeout(tooltipTimeout);
                 tooltip.style.display = 'none';
             }
@@ -211,20 +207,40 @@
         let dataFimGlobal = null;
         let emIntervalo = false;
 
-        // --- SETUP INICIAL ---
+        // --- SETUP INICIAL INTELIGENTE ---
         window.onload = function() {
-            // Horários Padrão
-            document.getElementById('hora-inicio').value = '09:20';
-            document.getElementById('hora-fim').value = '10:15';
+            const now = new Date();
+            
+            // Define o horário alvo padrão: 09:20
+            const standardStart = new Date(now);
+            standardStart.setHours(9, 20, 0, 0);
 
-            // --- VALORES PADRÃO (Com Cores Solicitadas) ---
-            // Confraternização: Amarelo (#ffcc00) / Texto Preto (#000000)
+            let startVal = "09:20";
+            let endVal = "10:15"; // Padrão
+
+            // REGRA: Se AGORA > 09:20, ajusta para o momento atual
+            if (now > standardStart) {
+                // Formata hora atual para o input
+                const h = String(now.getHours()).padStart(2, '0');
+                const m = String(now.getMinutes()).padStart(2, '0');
+                startVal = `${h}:${m}`;
+
+                // Calcula hora final baseada na duração padrão das etapas
+                // 10 (Conf) + 15 (Missão) + 30 (Bíblia) = 55 min
+                const duracaoPadraoMs = 55 * 60000; 
+                const endDate = new Date(now.getTime() + duracaoPadraoMs);
+                
+                const hEnd = String(endDate.getHours()).padStart(2, '0');
+                const mEnd = String(endDate.getMinutes()).padStart(2, '0');
+                endVal = `${hEnd}:${mEnd}`;
+            }
+
+            document.getElementById('hora-inicio').value = startVal;
+            document.getElementById('hora-fim').value = endVal;
+
+            // --- VALORES PADRÃO (Escola Sabatina) ---
             adicionarFase("Confraternização", 10, true, "#ffcc00", "#000000");
-            
-            // Missão: Verde (#28a745) / Texto Branco (#ffffff)
             adicionarFase("Missão", 15, true, "#28a745", "#ffffff");
-            
-            // Estudo da Bíblia: Azul (#007bff) / Texto Branco (#ffffff)
             adicionarFase("Estudo da Bíblia e Oração", 30, false, "#007bff", "#ffffff");
 
             setInterval(() => {
@@ -241,7 +257,6 @@
         }
 
         let idCount = 0;
-        // Função atualizada para aceitar cores padrão
         function adicionarFase(titulo="", tempo=10, redutivel=true, bg="#000000", txt="#ffffff") {
             idCount++;
             const container = document.getElementById('lista-fases');
