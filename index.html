@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Cronometro Escola Sabatina Viva v1</title>
+    <title>cronos@alexandre.pro.br v1</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -96,7 +96,7 @@
     <div id="custom-tooltip"></div>
 
     <div id="config-screen">
-        <h2 style="margin-top:0; color:#00d2ff;">Cronometro Escola Sabatina Viva v2</h2>
+        <h2 style="margin-top:0; color:#00d2ff;">Cronometro Escola Sabatina Viva</h2>
         
         <div class="painel-top">
             <div class="campo" data-tooltip="Hora de início da programação. Se o relógio atual já tiver passado desse horário, o sistema considerará como atraso.">
@@ -162,27 +162,42 @@
     </div>
 
     <script>
-        // --- SISTEMA DE TOOLTIPS ---
+        // --- SISTEMA DE TOOLTIPS (COM DELAY 3S) ---
         const tooltip = document.getElementById('custom-tooltip');
+        let tooltipTimeout;
+        let mouseX = 0;
+        let mouseY = 0;
         
-        document.addEventListener('mouseover', function(e) {
-            const target = e.target.closest('[data-tooltip]');
-            if (target) {
-                tooltip.innerText = target.getAttribute('data-tooltip');
-                tooltip.style.display = 'block';
+        // Rastreia o mouse para posicionar o tooltip quando o tempo acabar
+        document.addEventListener('mousemove', function(e) {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            
+            // Se o tooltip já estiver visível, ele segue o mouse
+            if (tooltip.style.display === 'block') {
+                tooltip.style.top = (mouseY + 15) + 'px';
+                tooltip.style.left = (mouseX + 15) + 'px';
             }
         });
 
-        document.addEventListener('mousemove', function(e) {
-            if (tooltip.style.display === 'block') {
-                tooltip.style.top = (e.clientY + 15) + 'px';
-                tooltip.style.left = (e.clientX + 15) + 'px';
+        document.addEventListener('mouseover', function(e) {
+            const target = e.target.closest('[data-tooltip]');
+            if (target) {
+                // Inicia contagem de 3 segundos
+                tooltipTimeout = setTimeout(() => {
+                    tooltip.innerText = target.getAttribute('data-tooltip');
+                    tooltip.style.top = (mouseY + 15) + 'px';
+                    tooltip.style.left = (mouseX + 15) + 'px';
+                    tooltip.style.display = 'block';
+                }, 3000); // 3000ms = 3 segundos
             }
         });
 
         document.addEventListener('mouseout', function(e) {
             const target = e.target.closest('[data-tooltip]');
             if (target) {
+                // Cancela o timer se o mouse sair antes dos 3s
+                clearTimeout(tooltipTimeout);
                 tooltip.style.display = 'none';
             }
         });
@@ -198,14 +213,19 @@
 
         // --- SETUP INICIAL ---
         window.onload = function() {
-            // Horários Padrão (Solicitados: 09:20 às 10:15)
+            // Horários Padrão
             document.getElementById('hora-inicio').value = '09:20';
             document.getElementById('hora-fim').value = '10:15';
 
-            // --- VALORES PADRÃO (Escola Sabatina) ---
-            adicionarFase("Confraternização", 10, true);
-            adicionarFase("Missão", 15, true);
-            adicionarFase("Estudo da Lição e Oração", 30, false);
+            // --- VALORES PADRÃO (Com Cores Solicitadas) ---
+            // Confraternização: Amarelo (#ffcc00) / Texto Preto (#000000)
+            adicionarFase("Confraternização", 10, true, "#ffcc00", "#000000");
+            
+            // Missão: Verde (#28a745) / Texto Branco (#ffffff)
+            adicionarFase("Missão", 15, true, "#28a745", "#ffffff");
+            
+            // Estudo da Bíblia: Azul (#007bff) / Texto Branco (#ffffff)
+            adicionarFase("Estudo da Bíblia e Oração", 30, false, "#007bff", "#ffffff");
 
             setInterval(() => {
                 const now = new Date();
@@ -221,7 +241,8 @@
         }
 
         let idCount = 0;
-        function adicionarFase(titulo="", tempo=10, redutivel=true) {
+        // Função atualizada para aceitar cores padrão
+        function adicionarFase(titulo="", tempo=10, redutivel=true, bg="#000000", txt="#ffffff") {
             idCount++;
             const container = document.getElementById('lista-fases');
             const placeholder = titulo || `Parte ${idCount}`;
@@ -252,8 +273,8 @@
                 <div class="campo" style="width:60px;" data-tooltip="Quando faltarem esses segundos, o relógio ficará vermelho piscando.">
                     <label>Aviso(s)</label><input type="number" class="inp-aviso" value="30">
                 </div>
-                <div class="campo" data-tooltip="Cor de fundo da tela para esta parte."><label>Bg</label><input type="color" class="inp-bg" value="#000000"></div>
-                <div class="campo" data-tooltip="Cor do texto e do relógio."><label>Txt</label><input type="color" class="inp-txt" value="#ffffff"></div>
+                <div class="campo" data-tooltip="Cor de fundo da tela para esta parte."><label>Bg</label><input type="color" class="inp-bg" value="${bg}"></div>
+                <div class="campo" data-tooltip="Cor do texto e do relógio."><label>Txt</label><input type="color" class="inp-txt" value="${txt}"></div>
                 <div class="campo" style="flex:1;" data-tooltip="Imagem de fundo opcional."><label>Imagem</label><input type="file" class="inp-img" accept="image/*"></div>
             `;
             container.appendChild(div);
