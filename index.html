@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.34</title>
+    <title>cronos@alexandre.pro.br v1.35</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -95,7 +95,16 @@
         }
 
         /* Animações */
-        .piscando { color: #ff4444 !important; animation: pulse-red 1s infinite; }
+        /* Piscar na cor da fonte (apenas opacidade e tamanho) */
+        .piscando-cor { animation: pulse-opacity 1s infinite; }
+        @keyframes pulse-opacity {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.02); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* Piscar Vermelho (para tempo esgotado) */
+        .piscando-vermelho { color: #ff4444 !important; animation: pulse-red 1s infinite; }
         @keyframes pulse-red { 0% { transform: scale(1); } 50% { transform: scale(1.02); text-shadow: 0 0 20px red; } 100% { transform: scale(1); } }
         
         /* Piscar Fundo Crítico */
@@ -364,13 +373,22 @@
             const btnPausa = document.getElementById('btn-pausar');
             btnPausa.innerText = tempoRestante < 0 ? "⏸ PARAR" : "⏸ PAUSAR";
 
+            // Limpa classes antes de aplicar
+            el.classList.remove('piscando-cor', 'piscando-vermelho');
+            bg.classList.remove('bg-panic');
+
             if(!emIntervalo){
-                if(tempoRestante <= cronograma[indexAtual].aviso && tempoRestante > -30) {
-                    el.classList.add('piscando'); bg.classList.remove('bg-panic');
-                } else if(tempoRestante <= -30) {
-                    el.classList.add('piscando'); bg.classList.add('bg-panic');
-                } else {
-                    el.classList.remove('piscando'); bg.classList.remove('bg-panic');
+                const aviso = cronograma[indexAtual].aviso;
+                if (tempoRestante > 0 && tempoRestante <= aviso) {
+                    // Alerta Suave (Cor do usuário)
+                    el.classList.add('piscando-cor');
+                } else if (tempoRestante <= 0) {
+                    // Estouro (Vermelho)
+                    el.classList.add('piscando-vermelho');
+                    
+                    if (tempoRestante <= -30) {
+                        bg.classList.add('bg-panic');
+                    }
                 }
             }
 
@@ -379,7 +397,8 @@
                     clearInterval(intervaloTimer); tocarBip();
                     if(emIntervalo) rodarFase(indexAtual+1); else gerenciarIntervalo();
                 } else {
-                    document.getElementById('lbl-fim').classList.remove('hidden');
+                    // Fim apenas após 1 min
+                    if (tempoRestante <= -60) document.getElementById('lbl-fim').classList.remove('hidden');
                 }
             }
         }
@@ -398,7 +417,8 @@
         function configurarVisualIntervalo(isTempo){
             const d=document.getElementById('display-screen'); d.style.backgroundImage='none'; d.style.backgroundColor='#222';
             const t=document.getElementById('titulo-fase'); t.innerText="INTERVALO"; t.style.color="#ffaa00";
-            const tm=document.getElementById('timer-principal'); tm.style.color="#ffaa00"; tm.classList.remove('piscando');
+            const tm=document.getElementById('timer-principal'); tm.style.color="#ffaa00"; 
+            tm.classList.remove('piscando-cor', 'piscando-vermelho');
             if(!isTempo) tm.classList.add('hidden');
         }
 
@@ -441,11 +461,18 @@
         
         function acaoReiniciarFase(){ 
             tempoRestante=cronograma[indexAtual].segundosFinais; 
+            // Limpa visual de estouro
             document.getElementById('lbl-fim').classList.add('hidden');
             document.getElementById('display-screen').classList.remove('bg-panic');
+            const el = document.getElementById('timer-principal');
+            el.classList.remove('piscando-vermelho', 'piscando-cor');
+            
+            // Re-aplica cor original
+            el.style.color = cronograma[indexAtual].txt;
+
             if(calcularAjuste(new Date())){ 
                 const m=Math.floor(tempoRestante/60), s=tempoRestante%60; 
-                document.getElementById('timer-principal').innerText=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; 
+                el.innerText=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; 
                 if(estado!=="RODANDO") acaoContinuar(); 
             }
         }
@@ -505,6 +532,7 @@
             document.getElementById('titulo-fase').innerText="..."; 
             document.getElementById('lbl-fim').classList.add('hidden');
             document.getElementById('timer-principal').innerText="00:00"; 
+            document.getElementById('timer-principal').classList.remove('piscando-cor', 'piscando-vermelho');
             document.getElementById('btn-intervalo-manual').classList.add('hidden');
             document.getElementById('timer-principal').classList.remove('hidden');
         }
