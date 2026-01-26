@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.41</title>
+    <title>cronos@alexandre.pro.br v1.43</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -53,7 +53,10 @@
         
         .hidden { display: none !important; }
 
+        /* REGRA: Esconde controles de intervalo na última linha */
         #lista-fases .fase-row:last-child .col-intervalo { visibility: hidden; pointer-events: none; }
+        /* REGRA NOVA: Esconde box de estouro na última linha (pois é obrigatório) */
+        #lista-fases .fase-row:last-child .col-estouro { display: none; }
 
         /* Botões Ação */
         .btn-x { background: #ff4444; color: white; border: none; width: 25px; height: 25px; border-radius: 50%; font-weight: bold; cursor: pointer; }
@@ -111,26 +114,32 @@
         }
 
         /* --- ANIMAÇÕES --- */
+        
+        /* 1. Piscar Suave (Alerta positivo) */
         .piscando-cor { animation: pulse-opacity 1s infinite; }
         @keyframes pulse-opacity {
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.6; transform: scale(1.02); }
         }
 
+        /* 2. Piscar Vermelho (Estouro 0 a -60s) */
         .piscando-vermelho { color: #ff4444 !important; animation: pulse-red 1s infinite; }
         @keyframes pulse-red { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); text-shadow: 0 0 20px red; } }
         
+        /* 3. Piscar Alternado (Estouro > 60s) */
         .piscando-alerta-maximo { animation: flash-timer-panic 0.5s infinite; }
         @keyframes flash-timer-panic {
             0%, 49% { color: #ff4444; transform: scale(1.05); }
             50%, 100% { color: var(--txt-color); transform: scale(1); }
         }
 
+        /* 4. Piscar Fundo Crítico */
         .bg-panic { animation: bg-flash 1s infinite; }
         @keyframes bg-flash { 
             0%, 100% { background-color: #300000; } 50% { background-color: #aa0000; } 
         }
 
+        /* 5. Tarja FIM Strobe */
         @keyframes flash-strobe { 0%, 15% { opacity: 1; } 16%, 100% { opacity: 0; } }
         @keyframes flash-strobe-panic { 
             0%, 15% { color: #ff4444; opacity: 1; }
@@ -139,10 +148,10 @@
             66%, 100% { opacity: 0; }
         }
 
-        .anim-slow { animation: flash-strobe 2.5s infinite; }
-        .anim-med { animation: flash-strobe 1.5s infinite; }
-        .anim-fast { animation: flash-strobe 0.5s infinite; }
-        .anim-panic { animation: flash-strobe-panic 0.4s infinite; }
+        .anim-slow { animation: flash-strobe 2.5s infinite; } /* -2 min */
+        .anim-med { animation: flash-strobe 1.5s infinite; }  /* -3 min */
+        .anim-fast { animation: flash-strobe 0.5s infinite; } /* -4 min */
+        .anim-panic { animation: flash-strobe-panic 0.4s infinite; } /* -5 min */
 
     </style>
 </head>
@@ -181,7 +190,6 @@
                 <label class="chk-label" data-tooltip="Habilita a lógica de intervalos entre as partes.">
                     <input type="checkbox" id="chk-intervalos" onchange="toggleIntervalosGlobais()" class="chk-input"> Intervalos
                 </label>
-                
                 <label class="chk-label" data-tooltip="Habilita a possibilidade de estourar o tempo em fases individuais (contagem negativa).">
                     <input type="checkbox" id="chk-estouro-global" onchange="toggleEstouroGlobal()" class="chk-input"> Permitir Estouro
                 </label>
@@ -202,9 +210,7 @@
         <div id="relogio-real" data-tooltip="Hora Atual">--:--</div>
 
         <div class="conteudo-box" id="box-principal">
-            
             <h1 id="display-global-titulo" class="hidden"></h1>
-
             <h2 id="titulo-fase">...</h2>
             
             <div id="lbl-fim">FIM</div>
@@ -222,6 +228,7 @@
             <div class="controles-play">
                 <button id="btn-pausar" class="btn-ctrl" onclick="acaoPausar()" data-tooltip="Pausar ou Parar o tempo">⏸ PAUSAR</button>
                 <button id="btn-continuar" class="btn-ctrl hidden" onclick="acaoContinuar()" data-tooltip="Continuar contagem">▶ Continuar</button>
+                <button class="btn-ctrl" onclick="acaoAdicionarTempo()" style="border-color:#00d2ff; color:#00d2ff;" data-tooltip="Adiciona 1 minuto extra.">+1 Min</button>
                 <button class="btn-ctrl" onclick="acaoReiniciarFase()" style="border-color:#ffaa00; color:#ffaa00;" data-tooltip="Reiniciar etapa atual">↺ Reiniciar</button>
                 <button id="btn-avancar" class="btn-ctrl" onclick="acaoAvançar()" style="border-color:#00d2ff; color:#00d2ff;" data-tooltip="Pular etapa.">⏭ Avançar</button>
                 <button class="btn-ctrl" onclick="encerrar()" style="border-color:#ff4444; color:#ff4444;" data-tooltip="Sair.">⏹ Encerrar</button>
@@ -298,7 +305,7 @@
                     last.querySelector('.inp-int-manual').checked=f.intManual; 
                     last.querySelector('.inp-estouro-fase').checked=f.estouroFase || false;
                     last.querySelector('.inp-aviso').value=f.aviso; 
-                    uiAtualizarFase(last); // Atualiza UI inicial
+                    uiAtualizarFase(last); 
                 }
             });
             alert("Configuração carregada! (Nota: Selecione as imagens novamente)");
@@ -328,7 +335,6 @@
 
         function toggleIntervalosGlobais(){ 
             const c = document.getElementById('chk-intervalos').checked; 
-            // Atualiza todas as linhas baseado na nova config global
             document.querySelectorAll('.fase-row').forEach(row => uiAtualizarFase(row));
         }
         function toggleEstouroGlobal(){ 
@@ -336,25 +342,20 @@
             document.querySelectorAll('.col-estouro').forEach(e => c ? e.classList.remove('hidden') : e.classList.add('hidden')); 
         }
 
-        // LÓGICA DE UI DA LINHA
         function uiAtualizarFase(row) {
             const chkEstouro = row.querySelector('.inp-estouro-fase');
             const colIntervalo = row.querySelector('.col-intervalo');
             const chkManual = row.querySelector('.inp-int-manual');
             const boxTempoInt = row.querySelector('.inp-int-tempo').parentElement;
-
             const globalIntervalos = document.getElementById('chk-intervalos').checked;
 
-            // 1. Se "Estouro" estiver marcado, esconde coluna de intervalo
             if (chkEstouro.checked) {
                 colIntervalo.classList.add('hidden');
             } else {
-                // Se não estouro, obedece global
                 if (globalIntervalos) colIntervalo.classList.remove('hidden');
                 else colIntervalo.classList.add('hidden');
             }
 
-            // 2. Se "Clique?" estiver marcado, esconde input de tempo de pausa
             if (chkManual.checked) {
                 boxTempoInt.classList.add('hidden');
             } else {
@@ -389,7 +390,6 @@
                 <div class="campo" style="flex:1;" data-tooltip="Imagem"><label>Img</label><input type="file" class="inp-img" accept="image/*"></div>
             `;
             c.appendChild(div);
-            // Aplica estado inicial da UI
             uiAtualizarFase(div);
         }
 
@@ -410,6 +410,9 @@
                     aviso: parseInt(r.querySelector('.inp-aviso').value), bg: r.querySelector('.inp-bg').value, txt: r.querySelector('.inp-txt').value, img: url
                 });
             });
+
+            // Força estouro na última fase
+            if(cronograma.length > 0) cronograma[cronograma.length-1].permitirEstouro = true;
 
             document.getElementById('config-screen').style.display='none'; 
             document.getElementById('display-screen').style.display='flex';
@@ -487,43 +490,50 @@
             el.classList.remove('piscando-cor', 'piscando-vermelho', 'piscando-alerta-maximo');
             bg.classList.remove('bg-panic');
 
-            if(!emIntervalo){
+            // --- LÓGICA DE ALERTA VISUAL (POSITIVO) ---
+            if(!emIntervalo && tempoRestante > 0){
                 const aviso = cronograma[indexAtual].aviso;
-                if (tempoRestante > 0 && tempoRestante <= aviso) {
-                    el.classList.add('piscando-cor');
-                } else if (tempoRestante <= 0) {
-                    if (tempoRestante > -180) { 
-                        el.classList.add('piscando-vermelho');
-                    } else { 
-                        el.classList.add('piscando-alerta-maximo');
-                    }
-                    if (tempoRestante <= -30) bg.classList.add('bg-panic');
+                if (tempoRestante <= aviso) el.classList.add('piscando-cor');
+            }
+
+            // --- LÓGICA DE TEMPO NEGATIVO (ESTOURO) ---
+            if(tempoRestante <= 0) {
+                // Fundo Pisca
+                if (tempoRestante <= -30) bg.classList.add('bg-panic');
+                
+                // Texto Pisca
+                if (tempoRestante > -60) {
+                    el.classList.add('piscando-vermelho'); // 0 a -60s: Vermelho Simples
+                } else {
+                    el.classList.add('piscando-alerta-maximo'); // > -60s: Alterna Vermelho/Original
                 }
+
+                // BIP a cada 30s
+                if (Math.abs(tempoRestante) % 30 === 0) tocarBip();
             }
 
             if(tempoRestante < 0) {
                 // REGRA DE ESTOURO: 
                 // Se for a última fase OU se a fase atual permitir estouro
                 if(indexAtual === cronograma.length - 1 || cronograma[indexAtual].permitirEstouro) {
-                    clearInterval(intervaloTimer); tocarBip(); // Toca bip 1 vez ao zerar
+                    if(intervaloTimer) clearInterval(intervaloTimer); 
+                    // Tocar bip ao zerar (se for exatamente 0 ou -1 na transição)
+                    if(tempoRestante === -1) tocarBip(); 
                     
-                    // Se não for a ultima, trata como fim mas sem a etiqueta FIM gigante (usa alertas visuais)
-                    // Se for a última, usa etiqueta FIM
                     if(indexAtual === cronograma.length - 1) {
                         gerenciarFimNaUltima(tempoRestante);
                     }
                     
-                    // Continua rodando no negativo
                     intervaloTimer = setInterval(tickNegativo, 1000); 
                 } else {
-                    // Comportamento padrão: vai pro intervalo ou proxima
+                    // Padrão: vai pro intervalo ou proxima
                     clearInterval(intervaloTimer); tocarBip();
                     if(emIntervalo) rodarFase(indexAtual+1); else gerenciarIntervalo();
                 }
             }
         }
 
-        // Função separada para quando já está no negativo para evitar re-trigger de bips ou intervalos
+        // Loop específico para quando já estourou e está travado na fase
         function tickNegativo() {
             if(estado!=="RODANDO") return;
             tempoRestante--;
@@ -537,11 +547,14 @@
             el.classList.remove('piscando-cor', 'piscando-vermelho', 'piscando-alerta-maximo');
             bg.classList.remove('bg-panic');
 
-            // Aplica visuais de estouro
-            if (tempoRestante > -180) el.classList.add('piscando-vermelho');
+            // --- ALERTAS DE ESTOURO ---
+            if (tempoRestante > -60) el.classList.add('piscando-vermelho');
             else el.classList.add('piscando-alerta-maximo');
             
             if (tempoRestante <= -30) bg.classList.add('bg-panic');
+
+            // BIP a cada 30s
+            if (Math.abs(tempoRestante) % 30 === 0) tocarBip();
 
             if(indexAtual === cronograma.length - 1) {
                 gerenciarFimNaUltima(tempoRestante);
@@ -552,13 +565,14 @@
             const elFim = document.getElementById('lbl-fim');
             elFim.style.setProperty('--txt-color', cronograma[indexAtual].txt);
             
-            if (tempo > -60) { elFim.classList.remove('ativo'); return; }
+            // Só aparece após 2 minutos de atraso (-120s)
+            if (tempo > -120) { elFim.classList.remove('ativo'); return; }
 
             elFim.classList.add('ativo');
-            let novaClasse = 'anim-slow';
-            if (tempo <= -300) novaClasse = 'anim-panic';
-            else if (tempo <= -180) novaClasse = 'anim-fast';
-            else if (tempo <= -120) novaClasse = 'anim-med';
+            let novaClasse = 'anim-slow'; // 2 min
+            if (tempo <= -300) novaClasse = 'anim-panic'; // 5 min
+            else if (tempo <= -240) novaClasse = 'anim-fast'; // 4 min
+            else if (tempo <= -180) novaClasse = 'anim-med'; // 3 min
 
             if (!elFim.classList.contains(novaClasse)) {
                 elFim.classList.remove('anim-slow', 'anim-med', 'anim-fast', 'anim-panic');
@@ -592,6 +606,29 @@
             } else {
                 document.getElementById('btn-pausar').classList.add('hidden');
                 document.getElementById('btn-continuar').classList.remove('hidden');
+            }
+        }
+
+        function acaoAdicionarTempo() {
+            tempoRestante += 60;
+            cronograma[indexAtual].segundosFinais += 60;
+            
+            const el = document.getElementById('timer-principal');
+            const abs = Math.abs(tempoRestante);
+            const m = Math.floor(abs / 60); const s = abs % 60;
+            const sinal = tempoRestante < 0 ? "-" : "";
+            el.innerText = `${sinal}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+            if (!calcularAjuste(new Date())) {
+            } else {
+                if(tempoRestante > 0) {
+                    document.getElementById('lbl-fim').classList.remove('ativo');
+                    document.getElementById('display-screen').classList.remove('bg-panic');
+                    el.classList.remove('piscando-vermelho', 'piscando-alerta-maximo');
+                    el.style.color = cronograma[indexAtual].txt;
+                    if(intervaloTimer) clearInterval(intervaloTimer);
+                    intervaloTimer = setInterval(tick, 1000);
+                }
             }
         }
 
