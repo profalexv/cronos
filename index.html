@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.44</title>
+    <title>cronos@alexandre.pro.br v1.45</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -26,9 +26,12 @@
         }
         #global-titulo:focus { outline: 1px dashed #555; background: rgba(255,255,255,0.05); }
 
-        /* Botões de Arquivo */
+        /* Botões */
         .btn-file { background: #444; border: 1px solid #666; color: #fff; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; }
         .btn-file:hover { background: #555; border-color: #888; }
+
+        .btn-icon { background: transparent; border: 1px solid #555; color: #aaa; width: 30px; height: 30px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-icon:hover { background: #444; color: #fff; }
 
         /* Checkbox customizado */
         .chk-label { display: flex; align-items: center; gap: 5px; cursor: pointer; margin: 0; font-size: 0.9rem; }
@@ -43,11 +46,20 @@
         input[type="color"]::-webkit-color-swatch { border: none; }
         
         /* Lista de Fases */
+        .fase-wrapper { margin-bottom: 10px; border: 1px solid #444; border-radius: 6px; background: #252526; overflow: hidden; }
+        
         .fase-row { 
-            background: #252526; border: 1px solid #444; padding: 10px; margin-bottom: 10px; 
-            border-radius: 6px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; 
+            padding: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; 
         }
         
+        /* Painel de Áudio Personalizado */
+        .audio-panel {
+            background: #1a1a1a; padding: 10px; border-top: 1px dashed #444; display: none;
+        }
+        .audio-panel.open { display: block; }
+        .audio-slot { display: flex; gap: 10px; align-items: center; margin-bottom: 5px; background: #2a2a2a; padding: 5px; border-radius: 4px; }
+        .audio-slot span { font-size: 0.8rem; color: #888; }
+
         /* Colunas condicionais */
         .col-intervalo { background: rgba(255, 170, 0, 0.15); padding: 5px; border-radius: 4px; display: flex; gap: 5px; border: 1px dashed #666; }
         .col-estouro { background: rgba(255, 68, 68, 0.15); padding: 5px; border-radius: 4px; display: flex; gap: 5px; border: 1px dashed #666; }
@@ -55,9 +67,8 @@
         
         .hidden { display: none !important; }
 
-        /* Regras de ocultação da última linha */
-        #lista-fases .fase-row:last-child .col-intervalo { visibility: hidden; pointer-events: none; }
-        #lista-fases .fase-row:last-child .col-estouro { display: none; }
+        #lista-fases .fase-wrapper:last-child .col-intervalo { visibility: hidden; pointer-events: none; }
+        #lista-fases .fase-wrapper:last-child .col-estouro { display: none; }
 
         /* Botões Ação */
         .btn-x { background: #ff4444; color: white; border: none; width: 25px; height: 25px; border-radius: 50%; font-weight: bold; cursor: pointer; }
@@ -188,7 +199,7 @@
                 <label class="chk-label" data-tooltip="Habilita a possibilidade de estourar o tempo.">
                     <input type="checkbox" id="chk-estouro-global" onchange="toggleEstouroGlobal()" class="chk-input"> Permitir Estouro
                 </label>
-                <label class="chk-label" data-tooltip="Habilita sons. Se desmarcado, tudo fica mudo.">
+                <label class="chk-label" data-tooltip="Habilita controles de áudio.">
                     <input type="checkbox" id="chk-audio-global" onchange="toggleAudioGlobal()" class="chk-input"> Permitir Áudio
                 </label>
             </div>
@@ -264,14 +275,25 @@
                 audioGlobal: document.getElementById('chk-audio-global').checked,
                 fases: [] 
             };
-            document.querySelectorAll('.fase-row').forEach(row => {
+            document.querySelectorAll('.fase-wrapper').forEach(wrap => {
+                const row = wrap.querySelector('.fase-row');
+                const customAudios = [];
+                // Coleta configurações de áudios extras (APENAS TEMPO, não o arquivo)
+                wrap.querySelectorAll('.audio-slot').forEach(slot => {
+                    customAudios.push({
+                        min: slot.querySelector('.aud-min').value,
+                        sec: slot.querySelector('.aud-sec').value
+                    });
+                });
+
                 dados.fases.push({
                     titulo: row.querySelector('.inp-titulo').value, minutos: row.querySelector('.inp-tempo').value, redutivel: row.querySelector('.inp-redutivel').checked,
                     intTempo: row.querySelector('.inp-int-tempo').value, intManual: row.querySelector('.inp-int-manual').checked, 
                     estouroFase: row.querySelector('.inp-estouro-fase').checked,
-                    audioFase: row.querySelector('.inp-audio-fase').checked,
+                    beepFase: row.querySelector('.inp-beep-fase').checked,
                     aviso: row.querySelector('.inp-aviso').value,
-                    bg: row.querySelector('.inp-bg').value, txt: row.querySelector('.inp-txt').value
+                    bg: row.querySelector('.inp-bg').value, txt: row.querySelector('.inp-txt').value,
+                    customAudioTimes: customAudios
                 });
             });
             const blob = new Blob([JSON.stringify(dados, null, 2)], { type: "application/json" });
@@ -301,18 +323,27 @@
 
             document.getElementById('lista-fases').innerHTML = "";
             d.fases.forEach(f => {
-                adicionarFase(f.titulo, f.minutos, f.redutivel, f.bg, f.txt);
-                const l = document.querySelectorAll('.fase-row'); const last = l[l.length-1];
-                if(last){ 
-                    last.querySelector('.inp-int-tempo').value=f.intTempo; 
-                    last.querySelector('.inp-int-manual').checked=f.intManual; 
-                    last.querySelector('.inp-estouro-fase').checked=f.estouroFase || false;
-                    last.querySelector('.inp-audio-fase').checked = (f.audioFase !== undefined) ? f.audioFase : true;
-                    last.querySelector('.inp-aviso').value=f.aviso; 
-                    uiAtualizarFase(last); 
+                const div = adicionarFase(f.titulo, f.minutos, f.redutivel, f.bg, f.txt);
+                const l = div.querySelector('.fase-row');
+                
+                l.querySelector('.inp-int-tempo').value=f.intTempo; 
+                l.querySelector('.inp-int-manual').checked=f.intManual; 
+                l.querySelector('.inp-estouro-fase').checked=f.estouroFase || false;
+                l.querySelector('.inp-beep-fase').checked = (f.beepFase !== undefined) ? f.beepFase : true;
+                l.querySelector('.inp-aviso').value=f.aviso; 
+                
+                // Restaura slots de áudio (mas não os arquivos)
+                if(f.customAudioTimes && f.customAudioTimes.length > 0) {
+                    const painel = div.querySelector('.audio-panel');
+                    painel.classList.add('open');
+                    f.customAudioTimes.forEach(t => {
+                        adicionarSlotAudio(painel, t.min, t.sec);
+                    });
                 }
+
+                uiAtualizarFase(l); 
             });
-            alert("Configuração carregada! (Nota: Selecione as imagens novamente)");
+            alert("Configuração carregada! IMPORTANTE: Selecione novamente as imagens e os arquivos de áudio.");
         }
 
         const tooltip = document.getElementById('custom-tooltip');
@@ -322,6 +353,7 @@
         document.addEventListener('mouseout', e => { const t=e.target.closest('[data-tooltip]'); if(t){ clearTimeout(tooltipTimeout); tooltip.style.display='none'; }});
 
         let cronograma=[], indexAtual=0, tempoRestante=0, estado="PARADO", intervaloTimer=null, dataFimGlobal=null, emIntervalo=false;
+        let currentAudioPlayer = null; // Para parar áudios customizados
 
         window.onload = function() {
             const now = new Date(); const stdStart = new Date(now); stdStart.setHours(9,20,0,0);
@@ -348,6 +380,8 @@
         function toggleAudioGlobal(){
             const c = document.getElementById('chk-audio-global').checked;
             document.querySelectorAll('.col-audio').forEach(e => c ? e.classList.remove('hidden') : e.classList.add('hidden'));
+            // Também esconde/mostra botões de som extra
+            document.querySelectorAll('.btn-show-audio').forEach(btn => c ? btn.classList.remove('hidden') : btn.classList.add('hidden'));
         }
 
         function uiAtualizarFase(row) {
@@ -378,9 +412,11 @@
             const hideEst = document.getElementById('chk-estouro-global').checked ? '' : 'hidden';
             const hideAud = document.getElementById('chk-audio-global').checked ? '' : 'hidden';
             
+            const wrapper = document.createElement('div'); wrapper.className = 'fase-wrapper';
+            
             const div = document.createElement('div'); div.className = 'fase-row';
             div.innerHTML = `
-                <button class="btn-x" onclick="this.parentElement.remove()" data-tooltip="Remover">X</button>
+                <button class="btn-x" onclick="this.closest('.fase-wrapper').remove()" data-tooltip="Remover">X</button>
                 <div class="campo" style="flex:2; min-width:150px;" data-tooltip="Nome da parte"><label>Título</label><input type="text" class="inp-titulo" value="${tit}"></div>
                 <div class="campo" style="width:70px;" data-tooltip="Duração (min)"><label>Min</label><input type="number" class="inp-tempo" value="${min}" min="1"></div>
                 <div class="campo" style="align-items:center;" data-tooltip="Redutível?"><label>Redut?</label><input type="checkbox" class="inp-redutivel" ${red?'checked':''} style="width:20px; height:20px;"></div>
@@ -390,7 +426,7 @@
                 </div>
 
                 <div class="col-audio ${hideAud}">
-                    <div class="campo" style="align-items:center;" data-tooltip="Se marcado, emite sons. Se global estiver off, esta opção é ignorada."><label>Áudio?</label><input type="checkbox" class="inp-audio-fase" checked style="width:20px; height:20px;"></div>
+                    <div class="campo" style="align-items:center;" data-tooltip="Se marcado, emite bips padrão."><label>Beep?</label><input type="checkbox" class="inp-beep-fase" checked style="width:20px; height:20px;"></div>
                 </div>
 
                 <div class="col-intervalo ${hideInt}">
@@ -401,33 +437,82 @@
                 <div class="campo" data-tooltip="Cor Fundo"><label>Bg</label><input type="color" class="inp-bg" value="${bg}"></div>
                 <div class="campo" data-tooltip="Cor Texto"><label>Txt</label><input type="color" class="inp-txt" value="${txt}"></div>
                 <div class="campo" style="flex:1;" data-tooltip="Imagem"><label>Img</label><input type="file" class="inp-img" accept="image/*"></div>
+                
+                <button class="btn-icon btn-show-audio ${hideAud}" onclick="toggleAudioPanel(this)" data-tooltip="Configurar Áudios Específicos">🎵</button>
             `;
-            c.appendChild(div);
+            
+            const audioPanel = document.createElement('div'); audioPanel.className = 'audio-panel';
+            audioPanel.innerHTML = `
+                <div style="font-size:0.8rem; color:#aaa; margin-bottom:5px;">Áudios Específicos (Música, Locução)</div>
+                <div class="audio-list"></div>
+                <button class="btn-add" style="padding:5px 10px; font-size:0.8rem;" onclick="adicionarSlotAudio(this.parentElement)">+ Novo Áudio</button>
+            `;
+
+            wrapper.appendChild(div);
+            wrapper.appendChild(audioPanel);
+            c.appendChild(wrapper);
             uiAtualizarFase(div);
+            return wrapper; // Retorna o wrapper para manipulação
+        }
+
+        function toggleAudioPanel(btn) {
+            const panel = btn.closest('.fase-wrapper').querySelector('.audio-panel');
+            panel.classList.toggle('open');
+        }
+
+        function adicionarSlotAudio(panel, minVal=0, secVal=0) {
+            const list = panel.querySelector('.audio-list');
+            const div = document.createElement('div'); div.className = 'audio-slot';
+            div.innerHTML = `
+                <span>Tocar faltando:</span>
+                <input type="number" class="aud-min" value="${minVal}" placeholder="Min" style="width:40px;">:
+                <input type="number" class="aud-sec" value="${secVal}" placeholder="Seg" style="width:40px;">
+                <input type="file" class="aud-file" accept="audio/*">
+                <button class="btn-x" style="width:20px; height:20px; font-size:0.7rem;" onclick="this.parentElement.remove()">X</button>
+            `;
+            list.appendChild(div);
         }
 
         function iniciarApresentacao() {
             const hI = document.getElementById('hora-inicio').value, hF = document.getElementById('hora-fim').value;
-            const rows = document.querySelectorAll('.fase-row');
-            if(!hI || !hF || rows.length===0) return alert("Configure os dados.");
+            if(!hI || !hF) return alert("Configure os dados.");
             const now = new Date(); const dIni = montarData(hI, now);
             dataFimGlobal = montarData(hF, now); if(dataFimGlobal < dIni) dataFimGlobal.setDate(dataFimGlobal.getDate()+1);
             cronograma = [];
-            rows.forEach(r => {
-                const img = r.querySelector('.inp-img'); const url = img.files[0] ? URL.createObjectURL(img.files[0]) : "";
+            
+            const wrappers = document.querySelectorAll('.fase-wrapper');
+            wrappers.forEach(wrap => {
+                const row = wrap.querySelector('.fase-row');
+                const img = row.querySelector('.inp-img'); 
+                const url = img.files[0] ? URL.createObjectURL(img.files[0]) : "";
+                
+                // Mapear áudios customizados
+                const customAudios = [];
+                wrap.querySelectorAll('.audio-slot').forEach(slot => {
+                    const f = slot.querySelector('.aud-file').files[0];
+                    if(f) {
+                        const m = parseInt(slot.querySelector('.aud-min').value) || 0;
+                        const s = parseInt(slot.querySelector('.aud-sec').value) || 0;
+                        customAudios.push({
+                            triggerSeconds: (m * 60) + s,
+                            src: URL.createObjectURL(f)
+                        });
+                    }
+                });
+
                 cronograma.push({
-                    titulo: r.querySelector('.inp-titulo').value, minutosOrig: parseFloat(r.querySelector('.inp-tempo').value),
-                    segundosFinais: parseFloat(r.querySelector('.inp-tempo').value)*60, redutivel: r.querySelector('.inp-redutivel').checked,
-                    intSegundos: parseInt(r.querySelector('.inp-int-tempo').value)||0, intManual: r.querySelector('.inp-int-manual').checked,
-                    permitirEstouro: r.querySelector('.inp-estouro-fase').checked,
-                    audio: r.querySelector('.inp-audio-fase').checked,
-                    aviso: parseInt(r.querySelector('.inp-aviso').value), bg: r.querySelector('.inp-bg').value, txt: r.querySelector('.inp-txt').value, img: url
+                    titulo: row.querySelector('.inp-titulo').value, minutosOrig: parseFloat(row.querySelector('.inp-tempo').value),
+                    segundosFinais: parseFloat(row.querySelector('.inp-tempo').value)*60, redutivel: row.querySelector('.inp-redutivel').checked,
+                    intSegundos: parseInt(row.querySelector('.inp-int-tempo').value)||0, intManual: row.querySelector('.inp-int-manual').checked,
+                    permitirEstouro: row.querySelector('.inp-estouro-fase').checked,
+                    beep: row.querySelector('.inp-beep-fase').checked,
+                    aviso: parseInt(row.querySelector('.inp-aviso').value), bg: row.querySelector('.inp-bg').value, txt: row.querySelector('.inp-txt').value, img: url,
+                    customAudios: customAudios
                 });
             });
 
             if(cronograma.length > 0) {
                 cronograma[cronograma.length-1].permitirEstouro = true;
-                // Mantém a config de audio que estava na UI para a ultima fase
             }
 
             document.getElementById('config-screen').style.display='none'; 
@@ -475,6 +560,7 @@
         }
 
         function rodarFase(idx){
+            if(currentAudioPlayer) { currentAudioPlayer.pause(); currentAudioPlayer = null; }
             indexAtual=idx; const fase=cronograma[idx]; tempoRestante=fase.segundosFinais; emIntervalo=false; estado="RODANDO";
             aplicarVisual(fase);
             atualizarBotoes(true);
@@ -490,6 +576,19 @@
 
         function tick(){
             if(estado!=="RODANDO" && estado!=="INTERVALO") return;
+            
+            // Verifica Áudios Customizados (Se áudio global ativado)
+            if(estado === "RODANDO" && !emIntervalo && document.getElementById('chk-audio-global').checked) {
+                const fase = cronograma[indexAtual];
+                if(fase.customAudios) {
+                    fase.customAudios.forEach(aud => {
+                        if(aud.triggerSeconds === tempoRestante) {
+                            playCustomAudio(aud.src);
+                        }
+                    });
+                }
+            }
+
             tempoRestante--;
             
             const abs = Math.abs(tempoRestante);
@@ -551,7 +650,6 @@
             
             if (tempoRestante <= -30) bg.classList.add('bg-panic');
 
-            // BIP a cada 30s se áudio permitido
             if (Math.abs(tempoRestante) % 30 === 0) tocarBip();
 
             if(indexAtual === cronograma.length - 1) {
@@ -609,7 +707,6 @@
         function acaoAdicionarTempo() {
             tempoRestante += 60;
             cronograma[indexAtual].segundosFinais += 60;
-            
             const el = document.getElementById('timer-principal');
             const abs = Math.abs(tempoRestante);
             const m = Math.floor(abs / 60); const s = abs % 60;
@@ -631,6 +728,7 @@
 
         function acaoPausar(){ 
             estado="PAUSADO"; clearInterval(intervaloTimer); 
+            if(currentAudioPlayer) currentAudioPlayer.pause();
             document.getElementById('timer-principal').style.opacity="0.5";
             document.getElementById('display-screen').classList.remove('bg-panic');
             document.getElementById('lbl-fim').style.animationPlayState = 'paused';
@@ -660,6 +758,7 @@
                 if(!calcularAjuste(new Date())) return; 
                 
                 estado=emIntervalo?"INTERVALO":"RODANDO"; 
+                if(currentAudioPlayer) currentAudioPlayer.play();
                 document.getElementById('timer-principal').style.opacity="1"; 
                 document.getElementById('lbl-fim').style.animationPlayState = 'running';
                 atualizarBotoes(true);
@@ -668,6 +767,7 @@
         }
         
         function acaoReiniciarFase(){ 
+            if(currentAudioPlayer) { currentAudioPlayer.pause(); currentAudioPlayer = null; }
             tempoRestante=cronograma[indexAtual].segundosFinais; 
             document.getElementById('lbl-fim').classList.remove('ativo', 'anim-slow', 'anim-med', 'anim-fast', 'anim-panic');
             document.getElementById('display-screen').classList.remove('bg-panic');
@@ -733,14 +833,24 @@
         
         function tocarBip(){ 
             const globalAudio = document.getElementById('chk-audio-global').checked;
-            const faseAudio = cronograma[indexAtual].audio;
-            if(!globalAudio || !faseAudio) return;
+            const faseBeep = cronograma[indexAtual].beep;
+            if(!globalAudio || !faseBeep) return;
 
             try{ const c=new(window.AudioContext||window.webkitAudioContext)(); const o=c.createOscillator(); o.type='sine'; o.frequency.value=880; o.connect(c.destination); o.start(); o.stop(c.currentTime+0.5); }catch(e){} 
+        }
+
+        function playCustomAudio(src) {
+            try {
+                if(currentAudioPlayer) currentAudioPlayer.pause();
+                const aud = new Audio(src);
+                aud.play();
+                currentAudioPlayer = aud;
+            } catch(e) { console.log("Erro audio custom", e); }
         }
         
         function encerrar(){ 
             if(intervaloTimer) clearInterval(intervaloTimer);
+            if(currentAudioPlayer) { currentAudioPlayer.pause(); currentAudioPlayer = null; }
             document.getElementById('display-screen').style.display = 'none'; 
             document.getElementById('config-screen').style.display = 'block'; 
             
