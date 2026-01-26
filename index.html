@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.35</title>
+    <title>cronos@alexandre.pro.br v1.36</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -61,23 +61,27 @@
         #relogio-real { position: absolute; top: 15px; right: 20px; z-index: 20; font-size: 1.5rem; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 20px; border: 1px solid #444; }
         #btn-sair { position: absolute; top: 15px; left: 20px; z-index: 20; background: none; border: none; color: #555; font-size: 1.2rem; cursor: pointer; }
 
-        .conteudo-box { z-index: 10; text-align: center; padding: 40px; border-radius: 20px; background: rgba(20, 20, 20, 0.8); backdrop-filter: blur(5px); min-width: 60%; max-width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .conteudo-box { z-index: 10; text-align: center; padding: 40px; border-radius: 20px; background: rgba(20, 20, 20, 0.8); backdrop-filter: blur(5px); min-width: 60%; max-width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; }
         
-        #titulo-fase { font-size: 2.5rem; margin: 0; text-transform: uppercase; color: #fff; letter-spacing: 2px; }
-        #timer-principal { font-size: 9rem; margin: 0; font-weight: bold; line-height: 1; font-variant-numeric: tabular-nums; }
-        #rodape-info { margin-top: 15px; font-size: 1.2rem; color: #aaa; border-top: 1px solid #555; padding-top: 10px; display: flex; justify-content: space-between;}
-
-        /* ETIQUETA FIM */
+        #titulo-fase { font-size: 2.5rem; margin: 0; text-transform: uppercase; color: #fff; letter-spacing: 2px; position: relative; z-index: 1; }
+        
+        /* ETIQUETA FIM (Sobreposta) */
         #lbl-fim { 
-            font-size: 6rem; color: #ff4444; font-weight: 800; animation: pulse-red 1s infinite; 
-            line-height: 1; text-shadow: 0 0 20px rgba(0,0,0,0.8); margin-bottom: -20px; margin-top: -20px;
+            position: absolute; top: 0; left: 0; width: 100%; height: 150px; /* Cobre a área do título */
+            display: flex; align-items: center; justify-content: center;
+            font-size: 8rem; color: #ff4444; font-weight: 900; 
+            background: rgba(0,0,0,0.85); /* Fundo escuro para tapar o título */
+            z-index: 50; border-radius: 20px 20px 0 0;
+            line-height: 1; text-transform: uppercase;
         }
+
+        #timer-principal { font-size: 9rem; margin: 0; font-weight: bold; line-height: 1; font-variant-numeric: tabular-nums; position: relative; z-index: 1; }
+        #rodape-info { margin-top: 15px; font-size: 1.2rem; color: #aaa; border-top: 1px solid #555; padding-top: 10px; display: flex; justify-content: space-between;}
 
         /* Controles Playback */
         .controles-play { margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
         .btn-ctrl { background: rgba(255,255,255,0.1); border: 1px solid #555; color: white; padding: 8px 15px; cursor: pointer; border-radius: 4px; min-width: 120px; transition: background 0.2s;}
         .btn-ctrl:hover { background: rgba(255,255,255,0.2); }
-        
         .btn-proximo { background: #ffaa00; color: #000; font-weight: bold; font-size: 1.5rem; padding: 15px 30px; border: none; border-radius: 50px; cursor: pointer; animation: pulse 2s infinite; margin-top: 20px; }
 
         /* Modal */
@@ -94,25 +98,37 @@
             display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.8); max-width: 250px; line-height: 1.4;
         }
 
-        /* Animações */
-        /* Piscar na cor da fonte (apenas opacidade e tamanho) */
+        /* --- ANIMAÇÕES --- */
+        /* Piscar Suave (Alerta na cor da fonte) */
         .piscando-cor { animation: pulse-opacity 1s infinite; }
         @keyframes pulse-opacity {
-            0% { opacity: 1; transform: scale(1); }
+            0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.6; transform: scale(1.02); }
-            100% { opacity: 1; transform: scale(1); }
         }
 
-        /* Piscar Vermelho (para tempo esgotado) */
+        /* Piscar Vermelho (Estouro) */
         .piscando-vermelho { color: #ff4444 !important; animation: pulse-red 1s infinite; }
-        @keyframes pulse-red { 0% { transform: scale(1); } 50% { transform: scale(1.02); text-shadow: 0 0 20px red; } 100% { transform: scale(1); } }
+        @keyframes pulse-red { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); text-shadow: 0 0 20px red; } }
         
         /* Piscar Fundo Crítico */
         .bg-panic { animation: bg-flash 1s infinite; }
         @keyframes bg-flash { 
-            0% { background-color: #300000; } 
-            50% { background-color: #aa0000; } 
-            100% { background-color: #300000; } 
+            0%, 100% { background-color: #300000; } 50% { background-color: #aa0000; } 
+        }
+
+        /* ANIMAÇÕES DA TARJA FIM */
+        .anim-slow { animation: blink-vis 1s infinite; }
+        .anim-med { animation: blink-vis 0.5s infinite; }
+        .anim-fast { animation: blink-vis 0.2s infinite; }
+        .anim-panic-color { animation: blink-alt-color 0.2s infinite; }
+
+        @keyframes blink-vis { 0%, 100% { visibility: visible; } 50% { visibility: hidden; } }
+        /* Alterna entre vermelho e a cor original (var settada via JS) */
+        @keyframes blink-alt-color { 
+            0% { color: #ff4444; visibility: visible; } 
+            49% { color: #ff4444; visibility: visible; }
+            50% { color: var(--txt-color); visibility: visible; }
+            100% { color: var(--txt-color); visibility: visible; }
         }
     </style>
 </head>
@@ -200,14 +216,11 @@
     </div>
 
     <script>
-        // --- EVENTOS UI ---
         document.getElementById('global-cor-titulo').addEventListener('input', e => document.getElementById('global-titulo').style.color = e.target.value);
 
-        // --- SISTEMA DE ARQUIVOS ---
         function salvarConfiguracao() {
             const titulo = document.getElementById('global-titulo').value || "Cronograma";
             const nomeArquivo = titulo.replace(/[^a-z0-9]/gi, '_').toLowerCase() + ".json";
-
             const dados = { 
                 tituloGlobal: titulo, corGlobal: document.getElementById('global-cor-titulo').value,
                 inicio: document.getElementById('hora-inicio').value, fim: document.getElementById('hora-fim').value, 
@@ -246,14 +259,12 @@
             alert("Configuração carregada! (Nota: Selecione as imagens novamente)");
         }
 
-        // --- TOOLTIPS ---
         const tooltip = document.getElementById('custom-tooltip');
         let tooltipTimeout;
         document.addEventListener('mousemove', e => { if(tooltip.style.display==='block'){ tooltip.style.top=(e.clientY+15)+'px'; tooltip.style.left=(e.clientX+15)+'px'; }});
         document.addEventListener('mouseover', e => { const t = e.target.closest('[data-tooltip]'); if(t){ tooltipTimeout = setTimeout(()=>{ tooltip.innerText=t.getAttribute('data-tooltip'); tooltip.style.top=(e.clientY+15)+'px'; tooltip.style.left=(e.clientX+15)+'px'; tooltip.style.display='block'; }, 3000); }});
         document.addEventListener('mouseout', e => { const t=e.target.closest('[data-tooltip]'); if(t){ clearTimeout(tooltipTimeout); tooltip.style.display='none'; }});
 
-        // --- CORE ---
         let cronograma=[], indexAtual=0, tempoRestante=0, estado="PARADO", intervaloTimer=null, dataFimGlobal=null, emIntervalo=false;
 
         window.onload = function() {
@@ -373,22 +384,16 @@
             const btnPausa = document.getElementById('btn-pausar');
             btnPausa.innerText = tempoRestante < 0 ? "⏸ PARAR" : "⏸ PAUSAR";
 
-            // Limpa classes antes de aplicar
             el.classList.remove('piscando-cor', 'piscando-vermelho');
             bg.classList.remove('bg-panic');
 
             if(!emIntervalo){
                 const aviso = cronograma[indexAtual].aviso;
                 if (tempoRestante > 0 && tempoRestante <= aviso) {
-                    // Alerta Suave (Cor do usuário)
                     el.classList.add('piscando-cor');
                 } else if (tempoRestante <= 0) {
-                    // Estouro (Vermelho)
                     el.classList.add('piscando-vermelho');
-                    
-                    if (tempoRestante <= -30) {
-                        bg.classList.add('bg-panic');
-                    }
+                    if (tempoRestante <= -30) bg.classList.add('bg-panic');
                 }
             }
 
@@ -397,8 +402,29 @@
                     clearInterval(intervaloTimer); tocarBip();
                     if(emIntervalo) rodarFase(indexAtual+1); else gerenciarIntervalo();
                 } else {
-                    // Fim apenas após 1 min
-                    if (tempoRestante <= -60) document.getElementById('lbl-fim').classList.remove('hidden');
+                    gerenciarFimNaUltima(tempoRestante);
+                }
+            }
+        }
+
+        function gerenciarFimNaUltima(tempo) {
+            const elFim = document.getElementById('lbl-fim');
+            // Set cor original para animação
+            elFim.style.setProperty('--txt-color', cronograma[indexAtual].txt);
+            
+            if (tempo <= -60) { // 1 min atraso
+                elFim.classList.remove('hidden');
+                // Remove todas anims
+                elFim.classList.remove('anim-slow', 'anim-med', 'anim-fast', 'anim-panic-color');
+                
+                if (tempo <= -150) { // 2.5 min
+                    elFim.classList.add('anim-panic-color');
+                } else if (tempo <= -120) { // 2 min
+                    elFim.classList.add('anim-fast');
+                } else if (tempo <= -90) { // 1.5 min
+                    elFim.classList.add('anim-med');
+                } else {
+                    elFim.classList.add('anim-slow');
                 }
             }
         }
@@ -436,6 +462,8 @@
             estado="PAUSADO"; clearInterval(intervaloTimer); 
             document.getElementById('timer-principal').style.opacity="0.5";
             document.getElementById('display-screen').classList.remove('bg-panic');
+            // Congela animação do FIM se estiver visivel
+            document.getElementById('lbl-fim').style.animationPlayState = 'paused';
             atualizarBotoes(false);
         }
         
@@ -454,6 +482,8 @@
                 
                 estado=emIntervalo?"INTERVALO":"RODANDO"; 
                 document.getElementById('timer-principal').style.opacity="1"; 
+                // Retoma anim FIM
+                document.getElementById('lbl-fim').style.animationPlayState = 'running';
                 atualizarBotoes(true);
                 intervaloTimer=setInterval(tick,1000); 
             }
@@ -461,13 +491,11 @@
         
         function acaoReiniciarFase(){ 
             tempoRestante=cronograma[indexAtual].segundosFinais; 
-            // Limpa visual de estouro
             document.getElementById('lbl-fim').classList.add('hidden');
+            document.getElementById('lbl-fim').className = 'hidden'; // Reset classes
             document.getElementById('display-screen').classList.remove('bg-panic');
             const el = document.getElementById('timer-principal');
             el.classList.remove('piscando-vermelho', 'piscando-cor');
-            
-            // Re-aplica cor original
             el.style.color = cronograma[indexAtual].txt;
 
             if(calcularAjuste(new Date())){ 
