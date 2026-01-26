@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.40</title>
+    <title>cronos@alexandre.pro.br v1.41</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -75,9 +75,9 @@
 
         #titulo-fase { font-size: 2.5rem; margin: 0; text-transform: uppercase; color: #fff; letter-spacing: 2px; position: relative; z-index: 1; }
         
-        /* ETIQUETA FIM (Sobreposta e Gigante) */
+        /* ETIQUETA FIM */
         #lbl-fim { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 160px; /* Cobre o título */
+            position: absolute; top: 0; left: 0; width: 100%; height: 160px;
             display: flex; align-items: center; justify-content: center;
             font-size: 8rem; color: #ff4444; font-weight: 900; 
             background: rgba(0,0,0,0.95); 
@@ -132,7 +132,6 @@
         }
 
         @keyframes flash-strobe { 0%, 15% { opacity: 1; } 16%, 100% { opacity: 0; } }
-        
         @keyframes flash-strobe-panic { 
             0%, 15% { color: #ff4444; opacity: 1; }
             16%, 49% { opacity: 0; }
@@ -299,6 +298,7 @@
                     last.querySelector('.inp-int-manual').checked=f.intManual; 
                     last.querySelector('.inp-estouro-fase').checked=f.estouroFase || false;
                     last.querySelector('.inp-aviso').value=f.aviso; 
+                    uiAtualizarFase(last); // Atualiza UI inicial
                 }
             });
             alert("Configuração carregada! (Nota: Selecione as imagens novamente)");
@@ -326,8 +326,41 @@
             setInterval(()=>{ document.getElementById('relogio-real').innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); },1000);
         };
 
-        function toggleIntervalosGlobais(){ const c = document.getElementById('chk-intervalos').checked; document.querySelectorAll('.col-intervalo').forEach(e => c ? e.classList.remove('hidden') : e.classList.add('hidden')); }
-        function toggleEstouroGlobal(){ const c = document.getElementById('chk-estouro-global').checked; document.querySelectorAll('.col-estouro').forEach(e => c ? e.classList.remove('hidden') : e.classList.add('hidden')); }
+        function toggleIntervalosGlobais(){ 
+            const c = document.getElementById('chk-intervalos').checked; 
+            // Atualiza todas as linhas baseado na nova config global
+            document.querySelectorAll('.fase-row').forEach(row => uiAtualizarFase(row));
+        }
+        function toggleEstouroGlobal(){ 
+            const c = document.getElementById('chk-estouro-global').checked; 
+            document.querySelectorAll('.col-estouro').forEach(e => c ? e.classList.remove('hidden') : e.classList.add('hidden')); 
+        }
+
+        // LÓGICA DE UI DA LINHA
+        function uiAtualizarFase(row) {
+            const chkEstouro = row.querySelector('.inp-estouro-fase');
+            const colIntervalo = row.querySelector('.col-intervalo');
+            const chkManual = row.querySelector('.inp-int-manual');
+            const boxTempoInt = row.querySelector('.inp-int-tempo').parentElement;
+
+            const globalIntervalos = document.getElementById('chk-intervalos').checked;
+
+            // 1. Se "Estouro" estiver marcado, esconde coluna de intervalo
+            if (chkEstouro.checked) {
+                colIntervalo.classList.add('hidden');
+            } else {
+                // Se não estouro, obedece global
+                if (globalIntervalos) colIntervalo.classList.remove('hidden');
+                else colIntervalo.classList.add('hidden');
+            }
+
+            // 2. Se "Clique?" estiver marcado, esconde input de tempo de pausa
+            if (chkManual.checked) {
+                boxTempoInt.classList.add('hidden');
+            } else {
+                boxTempoInt.classList.remove('hidden');
+            }
+        }
 
         let idCount=0;
         function adicionarFase(tit="", min=10, red=true, bg="#000000", txt="#ffffff") {
@@ -343,12 +376,12 @@
                 <div class="campo" style="align-items:center;" data-tooltip="Redutível?"><label>Redut?</label><input type="checkbox" class="inp-redutivel" ${red?'checked':''} style="width:20px; height:20px;"></div>
                 
                 <div class="col-estouro ${hideEst}">
-                    <div class="campo" style="align-items:center;" data-tooltip="Se marcado, o tempo estoura e conta negativo. Ignora intervalo."><label>Estouro?</label><input type="checkbox" class="inp-estouro-fase" style="width:20px; height:20px;"></div>
+                    <div class="campo" style="align-items:center;" data-tooltip="Se marcado, o tempo estoura e conta negativo. Ignora intervalo."><label>Estouro?</label><input type="checkbox" class="inp-estouro-fase" style="width:20px; height:20px;" onchange="uiAtualizarFase(this.closest('.fase-row'))"></div>
                 </div>
 
                 <div class="col-intervalo ${hideInt}">
                     <div class="campo" style="width:60px;" data-tooltip="Intervalo (s)"><label>Pausa</label><input type="number" class="inp-int-tempo" value="30"></div>
-                    <div class="campo" style="align-items:center;" data-tooltip="Esperar clique?"><label>Clique?</label><input type="checkbox" class="inp-int-manual" style="width:20px; height:20px;"></div>
+                    <div class="campo" style="align-items:center;" data-tooltip="Esperar clique?"><label>Clique?</label><input type="checkbox" class="inp-int-manual" style="width:20px; height:20px;" onchange="uiAtualizarFase(this.closest('.fase-row'))"></div>
                 </div>
                 <div class="campo" style="width:60px;" data-tooltip="Aviso (s)"><label>Aviso</label><input type="number" class="inp-aviso" value="30"></div>
                 <div class="campo" data-tooltip="Cor Fundo"><label>Bg</label><input type="color" class="inp-bg" value="${bg}"></div>
@@ -356,6 +389,8 @@
                 <div class="campo" style="flex:1;" data-tooltip="Imagem"><label>Img</label><input type="file" class="inp-img" accept="image/*"></div>
             `;
             c.appendChild(div);
+            // Aplica estado inicial da UI
+            uiAtualizarFase(div);
         }
 
         function iniciarApresentacao() {
