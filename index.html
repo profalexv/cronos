@@ -2,10 +2,10 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Cronos@Alex.Luza v1</title>
+    <title>cronos@alexandre.pro.br v1</title>
     <style>
         /* --- ESTILOS GERAIS --- */
-        body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
         
         /* --- CONFIGURAÇÃO --- */
         #config-screen { padding: 20px; height: 100vh; overflow-y: auto; box-sizing: border-box; max-width: 1200px; margin: 0 auto; }
@@ -20,17 +20,10 @@
         /* Inputs Gerais */
         input, select { background: #333; color: white; border: 1px solid #555; padding: 8px; border-radius: 4px; }
         
-        /* CORREÇÃO: Visualização dos Inputs de Cor */
+        /* Visualização dos Inputs de Cor */
         input[type="color"] {
-            -webkit-appearance: none;
-            border: 1px solid #555;
-            width: 50px;
-            height: 40px;
-            padding: 0;
-            background: none; /* Remove fundo cinza para mostrar a cor */
-            cursor: pointer;
-            border-radius: 4px;
-            overflow: hidden;
+            -webkit-appearance: none; border: 1px solid #555; width: 50px; height: 40px; padding: 0;
+            background: none; cursor: pointer; border-radius: 4px; overflow: hidden;
         }
         input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
         input[type="color"]::-webkit-color-swatch { border: none; }
@@ -76,6 +69,23 @@
         .btn-modal { padding: 15px; border: none; background: #333; color: white; text-align: left; cursor: pointer; border-radius: 4px; }
         .btn-modal:hover { background: #444; }
 
+        /* TOOLTIP CUSTOMIZADO */
+        #custom-tooltip {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.95);
+            border: 1px solid #00d2ff;
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            pointer-events: none;
+            z-index: 9999;
+            display: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+            max-width: 250px;
+            line-height: 1.4;
+        }
+
         .piscando { color: #ff4444 !important; animation: pulse-red 1s infinite; }
         @keyframes pulse-red { 0% { transform: scale(1); } 50% { transform: scale(1.02); text-shadow: 0 0 20px red; } 100% { transform: scale(1); } }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 170, 0, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 170, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 170, 0, 0); } }
@@ -83,19 +93,21 @@
 </head>
 <body>
 
+    <div id="custom-tooltip"></div>
+
     <div id="config-screen">
-        <h2 style="margin-top:0; color:#00d2ff;">Apresentador Master v10</h2>
+        <h2 style="margin-top:0; color:#00d2ff;">Cronometro Escola Sabatina Viva v1</h2>
         
         <div class="painel-top">
-            <div class="campo">
+            <div class="campo" data-tooltip="Hora de início da programação. Se o relógio atual já tiver passado desse horário, o sistema considerará como atraso.">
                 <label>Início Planejado</label>
                 <input type="time" id="hora-inicio">
             </div>
-            <div class="campo">
+            <div class="campo" data-tooltip="Hora limite absoluta para encerrar tudo. O sistema calculará o tempo das partes para não ultrapassar este horário.">
                 <label>Fim Absoluto</label>
                 <input type="time" id="hora-fim">
             </div>
-            <div class="campo" style="flex-direction: row; align-items: center; gap: 10px; padding-bottom: 5px;">
+            <div class="campo" style="flex-direction: row; align-items: center; gap: 10px; padding-bottom: 5px;" data-tooltip="Ativa as colunas de pausa. Útil para troca de apresentadores ou intervalos musicais.">
                 <input type="checkbox" id="chk-intervalos" onchange="toggleIntervalosGlobais()" style="width:20px; height:20px;">
                 <label style="margin:0; cursor:pointer;" for="chk-intervalos">Habilitar Intervalos</label>
             </div>
@@ -104,24 +116,24 @@
         <div id="lista-fases"></div>
 
         <div style="display:flex; gap:15px; margin-top:20px; padding-bottom:50px;">
-            <button class="btn-add" onclick="adicionarFase()">+ Nova Etapa</button>
-            <button class="btn-go" onclick="iniciarApresentacao()">INICIAR ▷</button>
+            <button class="btn-add" onclick="adicionarFase()" data-tooltip="Cria uma nova linha para adicionar mais uma parte à programação.">+ Nova Etapa</button>
+            <button class="btn-go" onclick="iniciarApresentacao()" data-tooltip="Salva as configurações, calcula os tempos (com descontos de atraso, se houver) e inicia a tela cheia.">INICIAR ▷</button>
         </div>
     </div>
 
     <div id="display-screen">
-        <button id="btn-sair" onclick="location.reload()" title="Sair e Configurar">✕ Sair</button>
+        <button id="btn-sair" onclick="location.reload()" title="Sair e Configurar" data-tooltip="Encerra a apresentação e volta para a tela de edição.">✕ Sair</button>
         <div class="overlay"></div>
-        <div id="relogio-real">--:--</div>
+        <div id="relogio-real" data-tooltip="Horário atual de Brasília.">--:--</div>
 
         <div class="conteudo-box" id="box-principal">
             <h2 id="titulo-fase">...</h2>
             
-            <div id="area-timer">
+            <div id="area-timer" data-tooltip="Tempo restante para esta parte.">
                 <div id="timer-principal">00:00</div>
             </div>
             
-            <button id="btn-intervalo-manual" class="btn-proximo hidden" onclick="sairIntervaloManual()">INICIAR PRÓXIMA PARTE ▶</button>
+            <button id="btn-intervalo-manual" class="btn-proximo hidden" onclick="sairIntervaloManual()" data-tooltip="Clique para encerrar o intervalo e começar a contar o tempo da próxima parte.">INICIAR PRÓXIMA PARTE ▶</button>
 
             <div id="rodape-info">
                 <span id="txt-status" style="color:#00d2ff;">Tempo Normal</span>
@@ -129,9 +141,9 @@
             </div>
 
             <div class="controles-play">
-                <button class="btn-ctrl" onclick="acaoPausar()">⏸ Pausar</button>
-                <button class="btn-ctrl" onclick="acaoContinuar()">▶ Continuar</button>
-                <button class="btn-ctrl" onclick="acaoReiniciarFase()" style="border-color:#ffaa00; color:#ffaa00;">↺ Reiniciar Fase</button>
+                <button class="btn-ctrl" onclick="acaoPausar()" data-tooltip="Congela o cronômetro. O tempo real continua passando, o que pode gerar atrasos.">⏸ Pausar</button>
+                <button class="btn-ctrl" onclick="acaoContinuar()" data-tooltip="Retoma a contagem. O sistema verificará se houve atraso durante a pausa e recalculará as próximas partes.">▶ Continuar</button>
+                <button class="btn-ctrl" onclick="acaoReiniciarFase()" style="border-color:#ffaa00; color:#ffaa00;" data-tooltip="Reseta o tempo desta parte para o início. CUIDADO: Isso consome tempo global e reduzirá as próximas partes.">↺ Reiniciar Fase</button>
             </div>
         </div>
     </div>
@@ -141,15 +153,40 @@
             <h2 style="color:#ff4444; margin-top:0;">⚠️ Atraso Crítico</h2>
             <p>O tempo disponível é insuficiente. Como deseja ajustar o cronograma?</p>
             <div class="modal-opts">
-                <button class="btn-modal" onclick="resolverConflito(1)"><b>1. Reduzir Todas</b> (Dividir prejuízo por igual)</button>
-                <button class="btn-modal" onclick="resolverConflito(2)"><b>2. Reduzir Última</b> (Penalizar apenas o fim)</button>
-                <button class="btn-modal" onclick="resolverConflito(3)"><b>3. Ignorar Prazo</b> (Estourar horário final)</button>
-                <button class="btn-modal" onclick="resolverConflito(4)"><b>4. Alterar Horário Final</b> (Estender prazo)</button>
+                <button class="btn-modal" onclick="resolverConflito(1)" data-tooltip="Diminui o tempo de TODAS as partes restantes proporcionalmente."><b>1. Reduzir Todas</b> (Dividir prejuízo por igual)</button>
+                <button class="btn-modal" onclick="resolverConflito(2)" data-tooltip="Mantém as próximas partes normais e tira todo o tempo que falta apenas da última parte."><b>2. Reduzir Última</b> (Penalizar apenas o fim)</button>
+                <button class="btn-modal" onclick="resolverConflito(3)" data-tooltip="Não altera os tempos. A programação vai terminar depois do horário previsto."><b>3. Ignorar Prazo</b> (Estourar horário final)</button>
+                <button class="btn-modal" onclick="resolverConflito(4)" data-tooltip="Permite definir um novo horário de término (ex: estender em 15 min)."><b>4. Alterar Horário Final</b> (Estender prazo)</button>
             </div>
         </div>
     </div>
 
     <script>
+        // --- SISTEMA DE TOOLTIPS ---
+        const tooltip = document.getElementById('custom-tooltip');
+        
+        document.addEventListener('mouseover', function(e) {
+            const target = e.target.closest('[data-tooltip]');
+            if (target) {
+                tooltip.innerText = target.getAttribute('data-tooltip');
+                tooltip.style.display = 'block';
+            }
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (tooltip.style.display === 'block') {
+                tooltip.style.top = (e.clientY + 15) + 'px';
+                tooltip.style.left = (e.clientX + 15) + 'px';
+            }
+        });
+
+        document.addEventListener('mouseout', function(e) {
+            const target = e.target.closest('[data-tooltip]');
+            if (target) {
+                tooltip.style.display = 'none';
+            }
+        });
+
         // --- DADOS GLOBAIS ---
         let cronograma = [];
         let indexAtual = 0;
@@ -159,18 +196,13 @@
         let dataFimGlobal = null;
         let emIntervalo = false;
 
-        // --- SETUP INICIAL (Alterado para os novos Padrões) ---
+        // --- SETUP INICIAL ---
         window.onload = function() {
-            const d = new Date();
-            const h = String(d.getHours()).padStart(2,'0');
-            const m = String(d.getMinutes()).padStart(2,'0');
-            document.getElementById('hora-inicio').value = `${h}:${m}`;
-            
-            // Sugere 1 hora a mais, mas pode ser ajustado
-            d.setHours(d.getHours() + 1);
-            document.getElementById('hora-fim').value = `${String(d.getHours()).padStart(2,'0')}:${m}`;
+            // Horários Padrão (Solicitados: 09:20 às 10:15)
+            document.getElementById('hora-inicio').value = '09:20';
+            document.getElementById('hora-fim').value = '10:15';
 
-            // --- NOVOS VALORES PADRÃO ---
+            // --- VALORES PADRÃO (Escola Sabatina) ---
             adicionarFase("Confraternização", 10, true);
             adicionarFase("Missão", 15, true);
             adicionarFase("Estudo da Lição e Oração", 30, false);
@@ -199,352 +231,26 @@
             const div = document.createElement('div');
             div.className = 'fase-row';
             div.innerHTML = `
-                <button class="btn-x" onclick="this.parentElement.remove()">X</button>
-                <div class="campo" style="flex:2; min-width:150px;">
+                <button class="btn-x" onclick="this.parentElement.remove()" data-tooltip="Remover esta parte da programação.">X</button>
+                <div class="campo" style="flex:2; min-width:150px;" data-tooltip="Nome que aparecerá na tela grande.">
                     <label>Título</label><input type="text" class="inp-titulo" value="${placeholder}">
                 </div>
-                <div class="campo" style="width:70px;">
+                <div class="campo" style="width:70px;" data-tooltip="Duração planejada em minutos.">
                     <label>Min</label><input type="number" class="inp-tempo" value="${tempo}" min="1">
                 </div>
-                <div class="campo" style="align-items:center;">
+                <div class="campo" style="align-items:center;" data-tooltip="Se marcado, o sistema tirará tempo desta parte caso haja atrasos para salvar a parte principal.">
                     <label>Redutível?</label><input type="checkbox" class="inp-redutivel" ${chkRed} style="width:20px; height:20px;">
                 </div>
                 <div class="col-intervalo ${hideInt}">
-                    <div class="campo" style="width:60px;">
+                    <div class="campo" style="width:60px;" data-tooltip="Tempo de intervalo antes de começar esta parte.">
                         <label>Pausa(s)</label><input type="number" class="inp-int-tempo" value="30">
                     </div>
-                    <div class="campo" style="align-items:center;">
+                    <div class="campo" style="align-items:center;" data-tooltip="Se marcado, o cronômetro para no intervalo e só inicia quando você clicar.">
                         <label>Clique?</label><input type="checkbox" class="inp-int-manual" style="width:20px; height:20px;">
                     </div>
                 </div>
-                <div class="campo" style="width:60px;">
+                <div class="campo" style="width:60px;" data-tooltip="Quando faltarem esses segundos, o relógio ficará vermelho piscando.">
                     <label>Aviso(s)</label><input type="number" class="inp-aviso" value="30">
                 </div>
-                <div class="campo"><label>Bg</label><input type="color" class="inp-bg" value="#000000"></div>
-                <div class="campo"><label>Txt</label><input type="color" class="inp-txt" value="#ffffff"></div>
-                <div class="campo" style="flex:1;"><label>Imagem</label><input type="file" class="inp-img" accept="image/*"></div>
-            `;
-            container.appendChild(div);
-        }
-
-        // --- INÍCIO ---
-        function iniciarApresentacao() {
-            const hIni = document.getElementById('hora-inicio').value;
-            const hFim = document.getElementById('hora-fim').value;
-            const linhas = document.querySelectorAll('.fase-row');
-            
-            if (!hIni || !hFim || linhas.length === 0) return alert("Configure os horários e adicione fases.");
-
-            const agora = new Date();
-            const dInicio = montarData(hIni, agora);
-            dataFimGlobal = montarData(hFim, agora);
-            if(dataFimGlobal < dInicio) dataFimGlobal.setDate(dataFimGlobal.getDate()+1);
-
-            cronograma = [];
-            linhas.forEach(row => {
-                const imgInp = row.querySelector('.inp-img');
-                const url = imgInp.files && imgInp.files[0] ? URL.createObjectURL(imgInp.files[0]) : "";
-                cronograma.push({
-                    titulo: row.querySelector('.inp-titulo').value,
-                    minutosOrig: parseFloat(row.querySelector('.inp-tempo').value),
-                    segundosFinais: parseFloat(row.querySelector('.inp-tempo').value) * 60,
-                    redutivel: row.querySelector('.inp-redutivel').checked,
-                    intSegundos: parseInt(row.querySelector('.inp-int-tempo').value) || 0,
-                    intManual: row.querySelector('.inp-int-manual').checked,
-                    aviso: parseInt(row.querySelector('.inp-aviso').value),
-                    bg: row.querySelector('.inp-bg').value,
-                    txt: row.querySelector('.inp-txt').value,
-                    img: url
-                });
-            });
-
-            // Ajuste inicial
-            const minPlan = cronograma.reduce((acc, f) => acc + f.minutosOrig, 0);
-            const minDisp = (dataFimGlobal - agora) / 1000 / 60;
-            if (minPlan > minDisp || agora > dInicio) {
-                if (!calcularAjuste(agora)) return;
-            }
-
-            document.getElementById('config-screen').style.display = 'none';
-            document.getElementById('display-screen').style.display = 'flex';
-            if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(e=>{});
-
-            indexAtual = 0;
-            rodarFase(0);
-        }
-
-        // --- ENGINE TIMER ---
-        function rodarFase(idx) {
-            if (idx >= cronograma.length) return encerrar();
-
-            indexAtual = idx;
-            const fase = cronograma[idx];
-            tempoRestante = fase.segundosFinais;
-            emIntervalo = false;
-            estado = "RODANDO";
-
-            aplicarVisual(fase);
-            
-            if(intervaloTimer) clearInterval(intervaloTimer);
-            intervaloTimer = setInterval(tick, 1000);
-            tick();
-        }
-
-        function tick() {
-            if (estado !== "RODANDO" && estado !== "INTERVALO") return;
-
-            tempoRestante--;
-            
-            const m = Math.floor(tempoRestante / 60);
-            const s = tempoRestante % 60;
-            const elTimer = document.getElementById('timer-principal');
-            elTimer.innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-
-            if (!emIntervalo) {
-                const aviso = cronograma[indexAtual].aviso;
-                if (tempoRestante <= aviso && tempoRestante > 0) elTimer.classList.add('piscando');
-                else elTimer.classList.remove('piscando');
-            }
-
-            if (tempoRestante < 0) {
-                clearInterval(intervaloTimer);
-                tocarBip();
-                if (emIntervalo) rodarFase(indexAtual + 1);
-                else gerenciarIntervalo();
-            }
-        }
-
-        function gerenciarIntervalo() {
-            const fase = cronograma[indexAtual];
-            const temProx = indexAtual + 1 < cronograma.length;
-            const habilitado = document.getElementById('chk-intervalos').checked;
-
-            if (habilitado && temProx) {
-                if (fase.intManual) entrarIntervaloManual();
-                else if (fase.intSegundos > 0) entrarIntervaloTempo(fase.intSegundos);
-                else rodarFase(indexAtual + 1);
-            } else {
-                rodarFase(indexAtual + 1);
-            }
-        }
-
-        function entrarIntervaloTempo(segundos) {
-            emIntervalo = true;
-            estado = "INTERVALO";
-            tempoRestante = segundos;
-            configurarVisualIntervalo(true);
-            
-            intervaloTimer = setInterval(tick, 1000);
-            tick();
-        }
-
-        function entrarIntervaloManual() {
-            emIntervalo = true;
-            estado = "PAUSADO"; 
-            configurarVisualIntervalo(false);
-            
-            // Exibe botão
-            document.getElementById('btn-intervalo-manual').classList.remove('hidden');
-        }
-
-        // Função chamada pelo botão "INICIAR PRÓXIMA PARTE"
-        function sairIntervaloManual() {
-            if (calcularAjuste(new Date())) {
-                document.getElementById('btn-intervalo-manual').classList.add('hidden');
-                document.getElementById('timer-principal').classList.remove('hidden');
-                rodarFase(indexAtual + 1);
-            }
-        }
-
-        function configuringVisualIntervalo(isTempo) {
-            document.getElementById('display-screen').style.backgroundImage = 'none';
-            document.getElementById('display-screen').style.backgroundColor = '#222';
-            document.getElementById('titulo-fase').innerText = `INTERVALO`;
-            document.getElementById('titulo-fase').style.color = "#ffaa00";
-            document.getElementById('timer-principal').style.color = "#ffaa00";
-            document.getElementById('timer-principal').classList.remove('piscando');
-            
-            if(!isTempo) document.getElementById('timer-principal').classList.add('hidden');
-        }
-        
-        // Correção do nome da função usada no "gerenciarIntervalo" e "entrarIntervaloManual"
-        function configurarVisualIntervalo(isTempo) {
-             document.getElementById('display-screen').style.backgroundImage = 'none';
-            document.getElementById('display-screen').style.backgroundColor = '#222';
-            document.getElementById('titulo-fase').innerText = `INTERVALO`;
-            document.getElementById('titulo-fase').style.color = "#ffaa00";
-            document.getElementById('timer-principal').style.color = "#ffaa00";
-            document.getElementById('timer-principal').classList.remove('piscando');
-            
-            if(!isTempo) document.getElementById('timer-principal').classList.add('hidden');
-        }
-
-        // --- AÇÕES DO USUÁRIO ---
-        function acaoPausar() {
-            if (estado === "RODANDO" || estado === "INTERVALO") {
-                estado = "PAUSADO";
-                clearInterval(intervaloTimer);
-                document.getElementById('timer-principal').style.opacity = "0.5";
-            }
-        }
-
-        function acaoContinuar() {
-            if (estado === "PAUSADO") {
-                if (!document.getElementById('btn-intervalo-manual').classList.contains('hidden')) return;
-                
-                if (!calcularAjuste(new Date())) return;
-
-                estado = emIntervalo ? "INTERVALO" : "RODANDO";
-                document.getElementById('timer-principal').style.opacity = "1";
-                intervaloTimer = setInterval(tick, 1000);
-            }
-        }
-
-        function acaoReiniciarFase() {
-            tempoRestante = cronograma[indexAtual].segundosFinais; 
-            
-            if (calcularAjuste(new Date())) {
-                const m = Math.floor(tempoRestante / 60);
-                const s = tempoRestante % 60;
-                document.getElementById('timer-principal').innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-                
-                if (estado === "RODANDO") {
-                } else {
-                     acaoContinuar();
-                }
-            }
-        }
-
-        // --- CÁLCULO INTELIGENTE ---
-        function calcularAjuste(agora) {
-            if (indexAtual >= cronograma.length - 1) return true; 
-
-            const msRestante = dataFimGlobal - agora;
-            const segDisp = msRestante / 1000;
-
-            if (segDisp <= 0) { abrirModal(); return false; }
-
-            let tempoNecessario = tempoRestante; 
-            for(let i = indexAtual + 1; i < cronograma.length; i++) {
-                tempoNecessario += cronograma[i].segundosFinais;
-            }
-
-            if (tempoNecessario <= segDisp + 5) return true;
-
-            // Ajuste necessário
-            let poolRedutivel = 0;
-            let indicesRedutiveis = [];
-            
-            if (cronograma[indexAtual].redutivel && (estado === "RODANDO" || estado === "PAUSADO")) {
-                poolRedutivel += tempoRestante; 
-                indicesRedutiveis.push(indexAtual);
-            }
-
-            for(let i = indexAtual + 1; i < cronograma.length; i++) {
-                if(cronograma[i].redutivel) {
-                    poolRedutivel += cronograma[i].minutosOrig * 60;
-                    indicesRedutiveis.push(i);
-                }
-            }
-
-            let tempoFixo = tempoNecessario - poolRedutivel;
-            let sobraParaRedutiveis = segDisp - tempoFixo;
-
-            if (sobraParaRedutiveis <= 0 || indicesRedutiveis.length === 0) {
-                abrirModal(); return false; 
-            }
-
-            const fator = sobraParaRedutiveis / poolRedutivel;
-            
-            indicesRedutiveis.forEach(idx => {
-                if (idx === indexAtual) {
-                    tempoRestante = Math.floor(tempoRestante * fator);
-                } else {
-                    cronograma[idx].segundosFinais = Math.floor(cronograma[idx].minutosOrig * 60 * fator);
-                }
-            });
-
-            const perc = ((1-fator)*100).toFixed(0);
-            notificarAjuste(`⚠️ Ajuste (-${perc}%)`);
-            return true;
-        }
-
-        // --- MODAL & UTILS ---
-        function abrirModal() { document.getElementById('modal-decisao').style.display = 'flex'; }
-
-        function resolverConflito(opt) {
-            document.getElementById('modal-decisao').style.display = 'none';
-            if (opt === 1) { // Todas
-                for(let i=indexAtual; i<cronograma.length; i++) cronograma[i].redutivel = true;
-                if(calcularAjuste(new Date())) acaoContinuar();
-            }
-            if (opt === 2) { // Última
-                for(let i=indexAtual; i<cronograma.length-1; i++) cronograma[i].redutivel = false;
-                cronograma[cronograma.length-1].redutivel = true;
-                if(calcularAjuste(new Date())) acaoContinuar();
-            }
-            if (opt === 3) { // Ignorar
-                notificarAjuste("⚠️ Prazo Ignorado");
-                if (!document.getElementById('btn-intervalo-manual').classList.contains('hidden')) {
-                     sairIntervaloManual();
-                } else {
-                     acaoContinuar();
-                }
-            }
-            if (opt === 4) { // Novo Prazo
-                const novo = prompt("Novo horário (HH:MM):", document.getElementById('hora-fim').value);
-                if (novo) {
-                    dataFimGlobal = montarData(novo, new Date());
-                    if (dataFimGlobal < new Date()) dataFimGlobal.setDate(dataFimGlobal.getDate()+1);
-                    if(calcularAjuste(new Date())) acaoContinuar();
-                } else abrirModal();
-            }
-        }
-
-        function aplicarVisual(fase) {
-            const el = document.getElementById('display-screen');
-            el.style.backgroundColor = fase.bg;
-            el.style.backgroundImage = fase.img ? `url('${fase.img}')` : 'none';
-            
-            document.getElementById('btn-intervalo-manual').classList.add('hidden');
-            document.getElementById('timer-principal').classList.remove('hidden');
-
-            document.getElementById('titulo-fase').innerText = fase.titulo;
-            document.getElementById('titulo-fase').style.color = fase.txt;
-            document.getElementById('timer-principal').style.color = fase.txt;
-            document.getElementById('txt-status').style.color = fase.txt;
-            document.getElementById('txt-proximo').style.color = fase.txt;
-            document.getElementById('txt-proximo').innerText = `Próximo: ${(indexAtual + 1 < cronograma.length) ? cronograma[indexAtual+1].titulo : "Fim"}`;
-        }
-
-        function montarData(str, ref) {
-            const [h, m] = str.split(':');
-            const d = new Date(ref); d.setHours(parseInt(h), parseInt(m), 0, 0);
-            return d;
-        }
-
-        function notificarAjuste(msg) {
-            const el = document.getElementById('txt-status');
-            el.innerText = msg;
-            el.style.color = "#ffaa00";
-        }
-
-        function tocarBip() {
-            try {
-                const c = new (window.AudioContext || window.webkitAudioContext)();
-                const o = c.createOscillator();
-                o.type='sine'; o.frequency.value=880;
-                o.connect(c.destination); o.start(); o.stop(c.currentTime+0.5);
-            } catch(e){}
-        }
-
-        function encerrar() {
-            const d = document.getElementById('display-screen');
-            d.style.background = "#000";
-            document.getElementById('titulo-fase').innerText = "ENCERRADO";
-            document.getElementById('timer-principal').innerText = "FIM";
-            document.querySelector('.controles-play').style.display = 'none';
-        }
-    </script>
-</body>
-</html>
+                <div class="campo" data-tooltip="Cor de fundo da tela para esta parte."><label>Bg</label><input type="color" class="inp-bg" value="#000000"></div>
+                <div class="campo" data-tooltip="Cor do texto e do relógio."><label>Txt</label><input type="color" class="inp-txt" value="#ffffff"></div>
