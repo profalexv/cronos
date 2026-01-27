@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.55</title>
+    <title>cronos@alexandre.pro.br v1.56</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -90,7 +90,14 @@
         #timer-principal { font-size: 9rem; margin: 0; font-weight: bold; line-height: 1; font-variant-numeric: tabular-nums; position: relative; z-index: 1; transition: font-size 0.5s ease; }
         .timer-waiting { font-size: 4rem !important; color: #777 !important; text-shadow: none !important; }
 
-        #rodape-info { margin-top: 15px; font-size: 1.2rem; color: #aaa; border-top: 1px solid #555; padding-top: 10px; display: flex; justify-content: space-between;}
+        /* INFO HORÁRIOS */
+        #info-horarios {
+            display: flex; justify-content: center; gap: 40px; margin-top: 10px; padding-bottom: 10px; 
+            border-bottom: 1px solid rgba(255,255,255,0.1); width: 100%; font-size: 1.1rem; color: #aaa;
+        }
+        #info-horarios span { display: flex; align-items: center; gap: 8px; }
+
+        #rodape-info { margin-top: 15px; font-size: 1.2rem; color: #aaa; padding-top: 10px; display: flex; justify-content: space-between;}
 
         .controles-play { margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
         .btn-ctrl { background: rgba(255,255,255,0.1); border: 1px solid #555; color: white; padding: 8px 15px; cursor: pointer; border-radius: 4px; min-width: 120px; transition: background 0.2s;}
@@ -175,7 +182,14 @@
             <h2 id="titulo-fase">...</h2>
             <div id="lbl-fim">FIM</div>
             <div id="area-timer" data-tooltip="Tempo restante"><div id="timer-principal">00:00</div></div>
+            
             <button id="btn-intervalo-manual" class="btn-proximo hidden" onclick="sairIntervaloManual()" data-tooltip="Iniciar próxima parte">INICIAR PRÓXIMA PARTE ▶</button>
+            
+            <div id="info-horarios">
+                <span data-tooltip="Horário limite configurado (Fim Absoluto)">🏁 Limite: <strong id="lbl-fim-absoluto" style="color:#e0e0e0">--:--</strong></span>
+                <span data-tooltip="Previsão de término baseada no tempo restante">🔮 Previsão: <strong id="lbl-fim-previsto" style="color:#28a745">--:--</strong></span>
+            </div>
+
             <div id="rodape-info"><span id="txt-status" style="color:#00d2ff;">Tempo Normal</span><span id="txt-proximo">Próximo: ...</span></div>
             <div class="controles-play">
                 <button id="btn-pausar" class="btn-ctrl" onclick="acaoPausar()" data-tooltip="Pausar ou Parar o tempo">⏸ PAUSAR</button>
@@ -490,6 +504,9 @@
                 elTit.innerText = document.getElementById('global-titulo').value; elTit.style.color = document.getElementById('global-cor-titulo').value; elTit.classList.remove('hidden');
             } else elTit.classList.add('hidden');
 
+            // Configura display de horário estático
+            document.getElementById('lbl-fim-absoluto').innerText = hF;
+
             atualizarBotoes(false); 
             if(now < dIni) iniciarEspera(dIni);
             else {
@@ -568,9 +585,47 @@
             if(intervaloTimer) clearInterval(intervaloTimer); intervaloTimer=setInterval(tick,1000); tick();
         }
 
+        function atualizarPrevisaoEntrega() {
+            // Calcula tempo restante da fase atual + todas as futuras + intervalos
+            let segundosTotais = 0;
+            const globalInt = document.getElementById('chk-intervalos').checked;
+
+            // Se estiver rodando/pausado, soma o tempoRestante atual
+            if(tempoRestante > 0) segundosTotais += tempoRestante;
+
+            // Soma fases futuras
+            for(let i = indexAtual + 1; i < cronograma.length; i++) {
+                segundosTotais += cronograma[i].segundosFinais;
+                // Soma intervalos se ativado (apenas se tiver tempo definido, não manual)
+                if(globalInt && cronograma[i-1]) {
+                    // Intervalo acontece ANTES da fase i (entre i-1 e i)
+                    segundosTotais += cronograma[i-1].intSegundos; 
+                }
+            }
+            
+            // Intervalo atual? Se estivermos em intervalo, o tempoRestante já é do intervalo.
+            
+            const now = new Date();
+            const previsao = new Date(now.getTime() + (segundosTotais * 1000));
+            
+            const h = String(previsao.getHours()).padStart(2,'0');
+            const m = String(previsao.getMinutes()).padStart(2,'0');
+            
+            const elPrev = document.getElementById('lbl-fim-previsto');
+            elPrev.innerText = `${h}:${m}`;
+
+            // Check atraso
+            if(dataFimGlobal) {
+                if(previsao > dataFimGlobal) elPrev.style.color = "#ff4444";
+                else elPrev.style.color = "#28a745";
+            }
+        }
+
         function tick() {
             if(estado!=="RODANDO" && estado!=="INTERVALO") return;
             
+            atualizarPrevisaoEntrega(); // Atualiza a cada segundo
+
             if(estado === "RODANDO" && !emIntervalo && document.getElementById('chk-audio-global').checked) {
                 const fase = cronograma[indexAtual];
                 if(fase.customAudios) { fase.customAudios.forEach(aud => { if(aud.trigger === tempoRestante) playSmartAudio(aud); }); }
@@ -605,6 +660,8 @@
 
         function tickNegativo() {
             if(estado!=="RODANDO") return;
+            atualizarPrevisaoEntrega(); // Atualiza também no estouro
+
             if(tempoRestante === 0 && document.getElementById('chk-audio-global').checked && !emIntervalo) {
                  const fase = cronograma[indexAtual];
                  if(fase.customAudios) { fase.customAudios.forEach(aud => { if(aud.trigger === 0) playSmartAudio(aud); }); }
@@ -647,6 +704,7 @@
         function atualizarBotoes(rodando) { if(rodando) { document.getElementById('btn-pausar').classList.remove('hidden'); document.getElementById('btn-continuar').classList.add('hidden'); } else { document.getElementById('btn-pausar').classList.add('hidden'); document.getElementById('btn-continuar').classList.remove('hidden'); } }
         function acaoAdicionarTempo() {
             tempoRestante += 60; cronograma[indexAtual].segundosFinais += 60;
+            atualizarPrevisaoEntrega(); // update
             const el = document.getElementById('timer-principal'); const abs = Math.abs(tempoRestante); const m = Math.floor(abs / 60); const s = abs % 60; const sinal = tempoRestante < 0 ? "-" : ""; el.innerText = `${sinal}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
             if (calcularAjuste(new Date())) { if(tempoRestante > 0) { document.getElementById('lbl-fim').classList.remove('ativo'); document.getElementById('display-screen').classList.remove('bg-panic'); el.classList.remove('piscando-vermelho', 'piscando-alerta-maximo'); el.style.color = cronograma[indexAtual].txt; if(intervaloTimer) clearInterval(intervaloTimer); intervaloTimer = setInterval(tick, 1000); } }
         }
