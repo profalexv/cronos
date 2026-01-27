@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.47</title>
+    <title>cronos@alexandre.pro.br v1.49</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -19,25 +19,21 @@
         
         input, select { background: #333; color: white; border: 1px solid #555; padding: 8px; border-radius: 4px; }
         
-        /* Input de Título Global */
         #global-titulo {
             background: transparent; border: none; font-size: 1.8rem; font-weight: bold; 
             color: #00d2ff; width: 100%; padding: 5px; margin: 0;
         }
         #global-titulo:focus { outline: 1px dashed #555; background: rgba(255,255,255,0.05); }
 
-        /* Botões */
         .btn-file { background: #444; border: 1px solid #666; color: #fff; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; }
         .btn-file:hover { background: #555; border-color: #888; }
 
         .btn-icon { background: transparent; border: 1px solid #555; color: #aaa; width: 30px; height: 30px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .btn-icon:hover { background: #444; color: #fff; }
 
-        /* Checkbox customizado */
         .chk-label { display: flex; align-items: center; gap: 5px; cursor: pointer; margin: 0; font-size: 0.9rem; }
         .chk-input { width: 18px; height: 18px; cursor: pointer; }
 
-        /* Inputs de Cor */
         input[type="color"] {
             -webkit-appearance: none; border: 1px solid #555; width: 50px; height: 40px; padding: 0;
             background: none; cursor: pointer; border-radius: 4px; overflow: hidden;
@@ -45,11 +41,9 @@
         input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
         input[type="color"]::-webkit-color-swatch { border: none; }
         
-        /* Lista de Fases */
         .fase-wrapper { margin-bottom: 10px; border: 1px solid #444; border-radius: 6px; background: #252526; overflow: hidden; }
         .fase-row { padding: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         
-        /* Painel de Áudio Avançado */
         .audio-panel { background: #151515; padding: 10px; border-top: 1px dashed #444; display: none; }
         .audio-panel.open { display: block; }
         
@@ -62,7 +56,6 @@
         .audio-slot input[type="number"] { width: 50px; padding: 5px; font-size: 0.9rem; background: #333; border: 1px solid #555; }
         .aud-warn { color: #ffaa00; font-size: 0.8rem; font-style: italic; display: flex; align-items: center; gap: 5px; width: 100%; margin-top: 5px;}
 
-        /* Colunas condicionais */
         .col-intervalo { background: rgba(255, 170, 0, 0.15); padding: 5px; border-radius: 4px; display: flex; gap: 5px; border: 1px dashed #666; }
         .col-estouro { background: rgba(255, 68, 68, 0.15); padding: 5px; border-radius: 4px; display: flex; gap: 5px; border: 1px dashed #666; }
         .col-audio { background: rgba(0, 210, 255, 0.15); padding: 5px; border-radius: 4px; display: flex; gap: 5px; border: 1px dashed #666; }
@@ -72,7 +65,6 @@
         #lista-fases .fase-wrapper:last-child .col-intervalo { visibility: hidden; pointer-events: none; }
         #lista-fases .fase-wrapper:last-child .col-estouro { display: none; }
 
-        /* Botões Ação */
         .btn-x { background: #ff4444; color: white; border: none; width: 25px; height: 25px; border-radius: 50%; font-weight: bold; cursor: pointer; }
         .btn-add { background: #444; color: white; border: 1px solid #666; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
         .btn-go { background: linear-gradient(135deg, #00d2ff, #0072ff); color: white; border: none; padding: 15px; flex-grow: 1; font-weight: bold; font-size: 1.1rem; border-radius: 4px; cursor: pointer; }
@@ -86,48 +78,38 @@
 
         .conteudo-box { z-index: 10; text-align: center; padding: 40px; border-radius: 20px; background: rgba(20, 20, 20, 0.8); backdrop-filter: blur(5px); min-width: 60%; max-width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; }
         
-        #display-global-titulo {
-            font-size: 1.5rem; color: #fff; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; opacity: 0.8;
-        }
-
+        #display-global-titulo { font-size: 1.5rem; color: #fff; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; opacity: 0.8; }
         #titulo-fase { font-size: 2.5rem; margin: 0; text-transform: uppercase; color: #fff; letter-spacing: 2px; position: relative; z-index: 1; }
         
-        /* ETIQUETA FIM */
-        #lbl-fim { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 160px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 8rem; color: #ff4444; font-weight: 900; 
-            background: rgba(0,0,0,0.95); 
-            z-index: 50; border-radius: 20px 20px 0 0;
-            line-height: 1; text-transform: uppercase;
-            opacity: 0; pointer-events: none; 
-        }
+        #lbl-fim { position: absolute; top: 0; left: 0; width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; font-size: 8rem; color: #ff4444; font-weight: 900; background: rgba(0,0,0,0.95); z-index: 50; border-radius: 20px 20px 0 0; line-height: 1; text-transform: uppercase; opacity: 0; pointer-events: none; }
         #lbl-fim.ativo { opacity: 1; }
 
-        #timer-principal { font-size: 9rem; margin: 0; font-weight: bold; line-height: 1; font-variant-numeric: tabular-nums; position: relative; z-index: 1; }
+        #timer-principal { font-size: 9rem; margin: 0; font-weight: bold; line-height: 1; font-variant-numeric: tabular-nums; position: relative; z-index: 1; transition: font-size 0.5s ease; }
+        .timer-waiting { font-size: 4rem !important; color: #777 !important; text-shadow: none !important; }
+
         #rodape-info { margin-top: 15px; font-size: 1.2rem; color: #aaa; border-top: 1px solid #555; padding-top: 10px; display: flex; justify-content: space-between;}
 
-        /* Controles Playback */
         .controles-play { margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
         .btn-ctrl { background: rgba(255,255,255,0.1); border: 1px solid #555; color: white; padding: 8px 15px; cursor: pointer; border-radius: 4px; min-width: 120px; transition: background 0.2s;}
         .btn-ctrl:hover { background: rgba(255,255,255,0.2); }
         .btn-proximo { background: #ffaa00; color: #000; font-weight: bold; font-size: 1.5rem; padding: 15px 30px; border: none; border-radius: 50px; cursor: pointer; animation: pulse 2s infinite; margin-top: 20px; }
 
-        /* Modal */
+        /* MODAL DE DECISÃO DE TEMPO */
         #modal-decisao { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; align-items: center; justify-content: center; }
         .modal-box { background: #222; padding: 30px; border-radius: 10px; border: 1px solid #ff4444; max-width: 500px; text-align: center; }
         .modal-opts { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
         .btn-modal { padding: 15px; border: none; background: #333; color: white; text-align: left; cursor: pointer; border-radius: 4px; }
         .btn-modal:hover { background: #444; }
 
-        /* TOOLTIP */
-        #custom-tooltip {
-            position: fixed; background: rgba(0, 0, 0, 0.95); border: 1px solid #00d2ff; color: #fff;
-            padding: 10px 15px; border-radius: 6px; font-size: 0.9rem; pointer-events: none; z-index: 9999;
-            display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.8); max-width: 250px; line-height: 1.4;
-        }
+        /* MODAL DE PAUSA DE AUDIO */
+        #modal-audio-pause { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 110; align-items: center; justify-content: center; }
+        .audio-pause-box { background: #222; padding: 25px; border-radius: 10px; border: 1px solid #00d2ff; max-width: 400px; text-align: center; box-shadow: 0 0 30px rgba(0,210,255,0.3); }
+        .audio-pause-opts { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        .btn-aud-opt { padding: 12px; border: none; color: #fff; cursor: pointer; border-radius: 4px; font-weight: bold; text-align: left; font-size: 1rem; }
+        
+        #custom-tooltip { position: fixed; background: rgba(0, 0, 0, 0.95); border: 1px solid #00d2ff; color: #fff; padding: 10px 15px; border-radius: 6px; font-size: 0.9rem; pointer-events: none; z-index: 9999; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.8); max-width: 250px; line-height: 1.4; }
 
-        /* --- ANIMAÇÕES --- */
+        /* ANIMAÇÕES */
         .piscando-cor { animation: pulse-opacity 1s infinite; }
         @keyframes pulse-opacity { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.02); } }
         .piscando-vermelho { color: #ff4444 !important; animation: pulse-red 1s infinite; }
@@ -154,10 +136,7 @@
             <div style="display:flex; align-items:center; gap:10px; flex-grow:1; margin-right:20px;">
                 <input type="text" id="global-titulo" value="Escola Sabatina Viva" data-tooltip="Clique para editar o título do evento.">
                 <input type="color" id="global-cor-titulo" value="#00d2ff" style="width:40px; height:35px; border:none;" data-tooltip="Alterar cor do título.">
-                
-                <label class="chk-label" data-tooltip="Se marcado, exibe este título na tela de apresentação.">
-                    <input type="checkbox" id="chk-exibir-titulo" class="chk-input"> Exibir
-                </label>
+                <label class="chk-label" data-tooltip="Se marcado, exibe este título na tela de apresentação."><input type="checkbox" id="chk-exibir-titulo" class="chk-input"> Exibir</label>
             </div>
             <div style="display:flex; gap:10px;">
                 <button class="btn-file" onclick="salvarConfiguracao()" data-tooltip="Salvar a programação.">💾 Salvar</button>
@@ -166,25 +145,12 @@
         </div>
         
         <div class="painel-top">
-            <div class="campo" data-tooltip="Início da programação.">
-                <label>Início Planejado</label>
-                <input type="time" id="hora-inicio">
-            </div>
-            <div class="campo" data-tooltip="Horário limite.">
-                <label>Fim Absoluto</label>
-                <input type="time" id="hora-fim">
-            </div>
-            
+            <div class="campo" data-tooltip="Início da programação."><label>Início Planejado</label><input type="time" id="hora-inicio"></div>
+            <div class="campo" data-tooltip="Horário limite."><label>Fim Absoluto</label><input type="time" id="hora-fim"></div>
             <div class="campo" style="flex-direction: row; align-items: center; gap: 20px; padding-bottom: 5px;">
-                <label class="chk-label" data-tooltip="Habilita a lógica de intervalos.">
-                    <input type="checkbox" id="chk-intervalos" onchange="toggleIntervalosGlobais()" class="chk-input"> Intervalos
-                </label>
-                <label class="chk-label" data-tooltip="Habilita contagem negativa.">
-                    <input type="checkbox" id="chk-estouro-global" onchange="toggleEstouroGlobal()" class="chk-input"> Permitir Estouro
-                </label>
-                <label class="chk-label" data-tooltip="Habilita sistema de som.">
-                    <input type="checkbox" id="chk-audio-global" onchange="toggleAudioGlobal()" class="chk-input"> Permitir Áudio
-                </label>
+                <label class="chk-label" data-tooltip="Habilita a lógica de intervalos."><input type="checkbox" id="chk-intervalos" onchange="toggleIntervalosGlobais()" class="chk-input"> Intervalos</label>
+                <label class="chk-label" data-tooltip="Habilita contagem negativa."><input type="checkbox" id="chk-estouro-global" onchange="toggleEstouroGlobal()" class="chk-input"> Permitir Estouro</label>
+                <label class="chk-label" data-tooltip="Habilita sons."><input type="checkbox" id="chk-audio-global" onchange="toggleAudioGlobal()" class="chk-input"> Permitir Áudio</label>
             </div>
         </div>
 
@@ -207,10 +173,7 @@
             <div id="lbl-fim">FIM</div>
             <div id="area-timer" data-tooltip="Tempo restante"><div id="timer-principal">00:00</div></div>
             <button id="btn-intervalo-manual" class="btn-proximo hidden" onclick="sairIntervaloManual()" data-tooltip="Iniciar próxima parte">INICIAR PRÓXIMA PARTE ▶</button>
-            <div id="rodape-info">
-                <span id="txt-status" style="color:#00d2ff;">Tempo Normal</span>
-                <span id="txt-proximo">Próximo: ...</span>
-            </div>
+            <div id="rodape-info"><span id="txt-status" style="color:#00d2ff;">Tempo Normal</span><span id="txt-proximo">Próximo: ...</span></div>
             <div class="controles-play">
                 <button id="btn-pausar" class="btn-ctrl" onclick="acaoPausar()" data-tooltip="Pausar ou Parar o tempo">⏸ PAUSAR</button>
                 <button id="btn-continuar" class="btn-ctrl hidden" onclick="acaoContinuar()" data-tooltip="Continuar contagem">▶ Continuar</button>
@@ -235,10 +198,22 @@
         </div>
     </div>
 
+    <div id="modal-audio-pause">
+        <div class="audio-pause-box">
+            <h2 style="color:#00d2ff; margin-top:0;">🎵 Áudio em Execução</h2>
+            <p>O tempo parou, mas há um áudio tocando. O que fazer?</p>
+            <div class="audio-pause-opts">
+                <button class="btn-aud-opt" style="background:#28a745;" onclick="resolverAudioPause('continue')">🔊 PROSSEGUIR ÁUDIO (Deixar tocando)</button>
+                <button class="btn-aud-opt" style="background:#ffaa00; color:#000;" onclick="resolverAudioPause('pause')">⏸️ PAUSAR ÁUDIO (Retoma ao voltar)</button>
+                <button class="btn-aud-opt" style="background:#007bff;" onclick="resolverAudioPause('restart')">⏮️ REINICIAR ÁUDIO (Do começo)</button>
+                <button class="btn-aud-opt" style="background:#ff4444;" onclick="resolverAudioPause('stop')">⏹️ PARAR ÁUDIO (Encerrar)</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.getElementById('global-cor-titulo').addEventListener('input', e => document.getElementById('global-titulo').style.color = e.target.value);
 
-        // --- SISTEMA DE ARQUIVOS ---
         function salvarConfiguracao() {
             const titulo = document.getElementById('global-titulo').value || "Cronograma";
             const nomeArquivo = titulo.replace(/[^a-z0-9]/gi, '_').toLowerCase() + ".json";
@@ -258,14 +233,13 @@
                     const fileIn = slot.querySelector('.aud-file');
                     let fName = "";
                     if(fileIn.files.length > 0) fName = fileIn.files[0].name;
-                    else {
-                        const warn = slot.querySelector('.aud-warn');
-                        if(warn) fName = warn.innerText.replace('⚠️ Re-selecione: ', '');
-                    }
+                    else { const warn = slot.querySelector('.aud-warn'); if(warn) fName = warn.innerText.replace('⚠️ Re-selecione: ', ''); }
                     customAudios.push({
                         min: slot.querySelector('.aud-min').value, sec: slot.querySelector('.aud-sec').value,
                         dur: slot.querySelector('.aud-dur').value, loop: slot.querySelector('.aud-loop').checked,
                         fin: slot.querySelector('.aud-fin').value, fout: slot.querySelector('.aud-fout').value,
+                        playThrough: slot.querySelector('.aud-playthrough').checked,
+                        stopAtZero: slot.querySelector('.aud-stopzero').checked,
                         fileName: fName
                     });
                 });
@@ -311,21 +285,21 @@
                 l.querySelector('.inp-aviso').value=f.aviso; 
                 if(f.customAudioTimes && f.customAudioTimes.length > 0) {
                     const painel = div.querySelector('.audio-panel'); painel.classList.add('open');
-                    f.customAudioTimes.forEach(t => adicionarSlotAudio(painel, t.min, t.sec, t.dur, t.loop, t.fin, t.fout, t.fileName));
+                    f.customAudioTimes.forEach(t => adicionarSlotAudio(painel, t.min, t.sec, t.dur, t.loop, t.fin, t.fout, t.fileName, t.playThrough, t.stopAtZero));
                 }
                 uiAtualizarFase(l); 
             });
             alert("Carregado! Selecione imagens e áudios novamente.");
         }
 
-        // --- GESTÃO DE UI ---
         const tooltip = document.getElementById('custom-tooltip'); let tooltipTimeout;
         document.addEventListener('mousemove', e => { if(tooltip.style.display==='block'){ tooltip.style.top=(e.clientY+15)+'px'; tooltip.style.left=(e.clientX+15)+'px'; }});
         document.addEventListener('mouseover', e => { const t = e.target.closest('[data-tooltip]'); if(t){ tooltipTimeout = setTimeout(()=>{ tooltip.innerText=t.getAttribute('data-tooltip'); tooltip.style.top=(e.clientY+15)+'px'; tooltip.style.left=(e.clientX+15)+'px'; tooltip.style.display='block'; }, 3000); }});
         document.addEventListener('mouseout', e => { const t=e.target.closest('[data-tooltip]'); if(t){ clearTimeout(tooltipTimeout); tooltip.style.display='none'; }});
 
         let cronograma=[], indexAtual=0, tempoRestante=0, estado="PARADO", intervaloTimer=null, dataFimGlobal=null, emIntervalo=false;
-        let activeAudio = null; // Objeto de áudio ativo { el: HTMLAudioElement, fadeOutTimer: null }
+        let activeAudio = null; 
+        let audioResumeAction = null; // 'continue', 'resume', 'restart', 'stop'
 
         window.onload = function() {
             const now = new Date(); const stdStart = new Date(now); stdStart.setHours(9,20,0,0);
@@ -387,7 +361,7 @@
             return wrapper;
         }
 
-        function adicionarSlotAudio(panel, min=0, sec=0, dur=0, loop=false, fin=5, fout=5, fname="") {
+        function adicionarSlotAudio(panel, min=0, sec=0, dur=0, loop=false, fin=5, fout=5, fname="", playThrough=false, stopZero=false) {
             const list = panel.querySelector('.audio-list');
             const div = document.createElement('div'); div.className = 'audio-slot';
             const aviso = fname ? `<span class="aud-warn">⚠️ Re-selecione: ${fname}</span>` : '';
@@ -396,15 +370,15 @@
                 <div class="grp"><label>Arquivo</label><input type="file" class="aud-file" accept="audio/*"></div>
                 <div class="grp"><label>Duração(s)</label><input type="number" class="aud-dur" value="${dur}" placeholder="0=Tudo"></div>
                 <div class="grp"><label>Loop</label><input type="checkbox" class="aud-loop" ${loop?'checked':''} style="width:20px;height:20px;"></div>
-                <div class="grp"><label>Fade In(s)</label><input type="number" class="aud-fin" value="${fin}"></div>
-                <div class="grp"><label>Fade Out(s)</label><input type="number" class="aud-fout" value="${fout}"></div>
+                <div class="grp"><label>Fade In/Out</label><div><input type="number" class="aud-fin" value="${fin}" style="width:30px">/<input type="number" class="aud-fout" value="${fout}" style="width:30px"></div></div>
+                <div class="grp"><label data-tooltip="Tocar até o fim (entra no estouro)">Até Fim?</label><input type="checkbox" class="aud-playthrough" ${playThrough?'checked':''} style="width:20px;height:20px;"></div>
+                <div class="grp"><label data-tooltip="Cortar em 00:00">Parar 0s?</label><input type="checkbox" class="aud-stopzero" ${stopZero?'checked':''} style="width:20px;height:20px;"></div>
                 <button class="btn-x" style="width:20px; height:20px;" onclick="this.parentElement.remove()">X</button>
                 ${aviso}
             `;
             list.appendChild(div);
         }
 
-        // --- CORE LÓGICO ---
         function iniciarApresentacao() {
             const hI = document.getElementById('hora-inicio').value, hF = document.getElementById('hora-fim').value;
             if(!hI || !hF) return alert("Configure os dados.");
@@ -416,7 +390,6 @@
                 const row = wrap.querySelector('.fase-row');
                 const img = row.querySelector('.inp-img'); 
                 const url = img.files[0] ? URL.createObjectURL(img.files[0]) : "";
-                
                 const customAudios = [];
                 wrap.querySelectorAll('.audio-slot').forEach(slot => {
                     const f = slot.querySelector('.aud-file').files[0];
@@ -427,11 +400,12 @@
                             duration: parseInt(slot.querySelector('.aud-dur').value) || 0,
                             loop: slot.querySelector('.aud-loop').checked,
                             fadeIn: parseInt(slot.querySelector('.aud-fin').value) || 0,
-                            fadeOut: parseInt(slot.querySelector('.aud-fout').value) || 0
+                            fadeOut: parseInt(slot.querySelector('.aud-fout').value) || 0,
+                            playThrough: slot.querySelector('.aud-playthrough').checked,
+                            stopAtZero: slot.querySelector('.aud-stopzero').checked
                         });
                     }
                 });
-
                 cronograma.push({
                     titulo: row.querySelector('.inp-titulo').value, minutosOrig: parseFloat(row.querySelector('.inp-tempo').value),
                     segundosFinais: parseFloat(row.querySelector('.inp-tempo').value)*60, redutivel: row.querySelector('.inp-redutivel').checked,
@@ -462,86 +436,72 @@
             }
         }
 
-        // --- AUDIO ENGINE ---
-        function playSmartAudio(config) {
-            // Se já tem audio tocando, faz crossfade
-            if(activeAudio) {
-                fadeAndStop(activeAudio, config.fadeIn); // Fade out do antigo
-            }
-
-            const audio = new Audio(config.src);
-            audio.loop = config.loop;
-            audio.volume = 0; // Começa mudo para fade in
-            audio.play().catch(e => console.log(e));
-
-            // Fade In Manual
-            let vol = 0;
-            const fadeInTime = config.fadeIn * 1000;
-            const stepTime = 50; 
-            const stepVol = 1 / (fadeInTime / stepTime);
+        function iniciarEspera(target) {
+            estado = "WAITING";
+            document.getElementById('titulo-fase').innerText = "AGUARDANDO INÍCIO";
+            document.getElementById('titulo-fase').style.color = "#00d2ff";
+            document.getElementById('timer-principal').style.color = "#ffffff";
+            document.getElementById('timer-principal').classList.add('timer-waiting');
+            document.getElementById('display-screen').style.backgroundImage = 'none';
+            document.getElementById('display-screen').style.backgroundColor = '#111';
             
-            const fadeInInterval = setInterval(() => {
-                if(audio.volume < 1 - stepVol) audio.volume += stepVol;
-                else { audio.volume = 1; clearInterval(fadeInInterval); }
-            }, stepTime);
+            intervaloTimer = setInterval(() => {
+                const now = new Date(); const diff = (target - now) / 1000;
+                if (diff <= 0) { 
+                    clearInterval(intervaloTimer); 
+                    document.getElementById('timer-principal').classList.remove('timer-waiting');
+                    tocarBip(); if(calcularAjuste(new Date())) { indexAtual = 0; rodarFase(0); } 
+                } 
+                else { const m = Math.floor(diff / 60); const s = Math.floor(diff % 60); document.getElementById('timer-principal').innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
+            }, 1000);
+        }
 
-            // Configurar Parada (Duration)
-            let stopTimer = null;
+        function playSmartAudio(config) {
+            if(activeAudio) fadeAndStop(activeAudio, config.fadeIn);
+            const audio = new Audio(config.src); audio.loop = config.loop; audio.volume = 0; 
+            audio.play().catch(e => console.log(e));
+            
+            // Atribui flags para controle de lógica
+            audio.customFlags = { 
+                playThrough: config.playThrough, 
+                stopAtZero: config.stopAtZero,
+                srcConfig: config // reference
+            };
+
+            let vol = 0; const fadeInTime = config.fadeIn * 1000; const stepTime = 50; const stepVol = 1 / (fadeInTime / stepTime);
+            const fadeInInterval = setInterval(() => { if(audio.volume < 1 - stepVol) audio.volume += stepVol; else { audio.volume = 1; clearInterval(fadeInInterval); } }, stepTime);
+            
             if(config.duration > 0) {
-                // Se tem duração definida, agenda o fade out
-                const playTime = config.duration * 1000;
-                const fadeOutTime = config.fadeOut * 1000;
-                // Start fade out antes do fim
-                setTimeout(() => {
-                    fadeAndStop({ el: audio }, config.fadeOut);
-                }, playTime - fadeOutTime);
+                const playTime = config.duration * 1000; const fadeOutTime = config.fadeOut * 1000;
+                setTimeout(() => { fadeAndStop({ el: audio }, config.fadeOut); }, playTime - fadeOutTime);
             }
-
             activeAudio = { el: audio };
         }
 
         function fadeAndStop(audioObj, durationSec) {
             if(!audioObj || !audioObj.el) return;
-            const audio = audioObj.el;
-            const fadeTime = (durationSec || 2) * 1000;
-            const stepTime = 50;
-            const startVol = audio.volume;
-            const stepVol = startVol / (fadeTime / stepTime);
-
-            const fadeOutInterval = setInterval(() => {
-                if(audio.volume > stepVol) audio.volume -= stepVol;
-                else {
-                    audio.volume = 0;
-                    audio.pause();
-                    clearInterval(fadeOutInterval);
-                    if(activeAudio === audioObj) activeAudio = null;
-                }
-            }, stepTime);
-        }
-
-        // --- LOGICA CRONOMETRO (Simplificada para caber) ---
-        // (Reutiliza funções da v1.46 com integração do playSmartAudio)
-        
-        function iniciarEspera(target) {
-            estado = "WAITING";
-            document.getElementById('titulo-fase').innerText = "AGUARDANDO INÍCIO";
-            document.getElementById('timer-principal').style.color = "#ffffff";
-            document.getElementById('display-screen').style.backgroundImage = 'none';
-            document.getElementById('display-screen').style.backgroundColor = '#111';
-            intervaloTimer = setInterval(() => {
-                const now = new Date(); const diff = (target - now) / 1000;
-                if (diff <= 0) { clearInterval(intervaloTimer); tocarBip(); if(calcularAjuste(new Date())) { indexAtual = 0; rodarFase(0); } } 
-                else { const m = Math.floor(diff / 60); const s = Math.floor(diff % 60); document.getElementById('timer-principal').innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
-            }, 1000);
+            const audio = audioObj.el; const fadeTime = (durationSec || 2) * 1000; const stepTime = 50; const startVol = audio.volume; const stepVol = startVol / (fadeTime / stepTime);
+            const fadeOutInterval = setInterval(() => { if(audio.volume > stepVol) audio.volume -= stepVol; else { audio.volume = 0; audio.pause(); clearInterval(fadeOutInterval); if(activeAudio === audioObj) activeAudio = null; } }, stepTime);
         }
 
         function rodarFase(idx) {
-            if(activeAudio) fadeAndStop(activeAudio, 3); // Crossfade entre fases
+            // Se o audio atual tem flag playThrough e NÃO tem stopAtZero, deixa ele viver.
+            // Caso contrário, mata.
+            if(activeAudio) {
+                const flags = activeAudio.el.customFlags;
+                if(flags && flags.playThrough && !flags.stopAtZero) {
+                    // Deixa tocando...
+                } else {
+                    fadeAndStop(activeAudio, 3);
+                }
+            }
+
             indexAtual=idx; const fase=cronograma[idx]; tempoRestante=fase.segundosFinais; emIntervalo=false; estado="RODANDO";
             aplicarVisual(fase); atualizarBotoes(true);
             const btnAv = document.getElementById('btn-avancar');
             if(indexAtual >= cronograma.length - 1) btnAv.classList.add('hidden'); else btnAv.classList.remove('hidden');
             document.getElementById('lbl-fim').classList.remove('ativo', 'anim-slow', 'anim-med', 'anim-fast', 'anim-panic');
+            document.getElementById('timer-principal').classList.remove('timer-waiting');
             if(intervaloTimer) clearInterval(intervaloTimer); intervaloTimer=setInterval(tick,1000); tick();
         }
 
@@ -551,22 +511,21 @@
             // Check Audio Triggers
             if(estado === "RODANDO" && !emIntervalo && document.getElementById('chk-audio-global').checked) {
                 const fase = cronograma[indexAtual];
-                if(fase.customAudios) {
-                    fase.customAudios.forEach(aud => {
-                        if(aud.trigger === tempoRestante) playSmartAudio(aud);
-                    });
-                }
+                if(fase.customAudios) { fase.customAudios.forEach(aud => { if(aud.trigger === tempoRestante) playSmartAudio(aud); }); }
+            }
+
+            // Check Stop At Zero Rule
+            if(tempoRestante === 0 && activeAudio && activeAudio.el.customFlags && activeAudio.el.customFlags.stopAtZero) {
+                fadeAndStop(activeAudio, 1);
             }
 
             tempoRestante--;
-            // ... (Restante da lógica visual igual v1.46)
+            
             const abs = Math.abs(tempoRestante); const m = Math.floor(abs/60); const s = abs%60; const sinal = tempoRestante < 0 ? "-" : "";
             const el = document.getElementById('timer-principal'); el.innerText = `${sinal}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-            const bg = document.getElementById('display-screen');
-            document.getElementById('btn-pausar').innerText = tempoRestante < 0 ? "⏸ PARAR" : "⏸ PAUSAR";
-            
+            const bg = document.getElementById('display-screen'); document.getElementById('btn-pausar').innerText = tempoRestante < 0 ? "⏸ PARAR" : "⏸ PAUSAR";
             el.classList.remove('piscando-cor', 'piscando-vermelho', 'piscando-alerta-maximo'); bg.classList.remove('bg-panic');
-
+            
             if(!emIntervalo){
                 if (tempoRestante > 0 && tempoRestante <= cronograma[indexAtual].aviso) el.classList.add('piscando-cor');
                 else if (tempoRestante <= 0) {
@@ -574,7 +533,6 @@
                     if (tempoRestante <= -30) bg.classList.add('bg-panic');
                 }
             }
-
             if(tempoRestante < 0) {
                 if(indexAtual === cronograma.length - 1 || cronograma[indexAtual].permitirEstouro) {
                     if(intervaloTimer) clearInterval(intervaloTimer); if(tempoRestante===-1) tocarBip();
@@ -586,6 +544,12 @@
 
         function tickNegativo() {
             if(estado!=="RODANDO") return;
+            // Check for 0s triggers that happen during overflow start (usually covered in tick, but safety check)
+            if(tempoRestante === 0 && document.getElementById('chk-audio-global').checked && !emIntervalo) {
+                 const fase = cronograma[indexAtual];
+                 if(fase.customAudios) { fase.customAudios.forEach(aud => { if(aud.trigger === 0) playSmartAudio(aud); }); }
+            }
+
             tempoRestante--;
             const abs = Math.abs(tempoRestante); const m = Math.floor(abs/60); const s = abs%60;
             const el = document.getElementById('timer-principal'); el.innerText = `-${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
@@ -603,9 +567,7 @@
             elFim.classList.add('ativo');
             let novaClasse = 'anim-slow';
             if (tempo <= -300) novaClasse = 'anim-panic'; else if (tempo <= -240) novaClasse = 'anim-fast'; else if (tempo <= -180) novaClasse = 'anim-med';
-            if (!elFim.classList.contains(novaClasse)) {
-                elFim.classList.remove('anim-slow', 'anim-med', 'anim-fast', 'anim-panic'); void elFim.offsetWidth; elFim.classList.add(novaClasse);
-            }
+            if (!elFim.classList.contains(novaClasse)) { elFim.classList.remove('anim-slow', 'anim-med', 'anim-fast', 'anim-panic'); void elFim.offsetWidth; elFim.classList.add(novaClasse); }
         }
 
         function gerenciarIntervalo(){
@@ -617,46 +579,59 @@
         function entrarIntervaloTempo(s){ emIntervalo=true; estado="INTERVALO"; tempoRestante=s; configurarVisualIntervalo(true); intervaloTimer=setInterval(tick,1000); tick(); }
         function entrarIntervaloManual(){ emIntervalo=true; estado="PAUSADO"; atualizarBotoes(false); configurarVisualIntervalo(false); document.getElementById('btn-intervalo-manual').classList.remove('hidden'); }
         function sairIntervaloManual(){ if(calcularAjuste(new Date())){ document.getElementById('btn-intervalo-manual').classList.add('hidden'); document.getElementById('timer-principal').classList.remove('hidden'); rodarFase(indexAtual+1); }}
-        
         function configurarVisualIntervalo(isTempo){
             const d=document.getElementById('display-screen'); d.style.backgroundImage='none'; d.style.backgroundColor='#222';
             const t=document.getElementById('titulo-fase'); t.innerText="INTERVALO"; t.style.color="#ffaa00";
             const tm=document.getElementById('timer-principal'); tm.style.color="#ffaa00"; tm.classList.remove('piscando-cor', 'piscando-vermelho', 'piscando-alerta-maximo');
             if(!isTempo) tm.classList.add('hidden');
         }
-
-        function atualizarBotoes(rodando) {
-            if(rodando) { document.getElementById('btn-pausar').classList.remove('hidden'); document.getElementById('btn-continuar').classList.add('hidden'); } 
-            else { document.getElementById('btn-pausar').classList.add('hidden'); document.getElementById('btn-continuar').classList.remove('hidden'); }
-        }
-
+        function atualizarBotoes(rodando) { if(rodando) { document.getElementById('btn-pausar').classList.remove('hidden'); document.getElementById('btn-continuar').classList.add('hidden'); } else { document.getElementById('btn-pausar').classList.add('hidden'); document.getElementById('btn-continuar').classList.remove('hidden'); } }
         function acaoAdicionarTempo() {
             tempoRestante += 60; cronograma[indexAtual].segundosFinais += 60;
             const el = document.getElementById('timer-principal'); const abs = Math.abs(tempoRestante); const m = Math.floor(abs / 60); const s = abs % 60; const sinal = tempoRestante < 0 ? "-" : ""; el.innerText = `${sinal}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-            if (calcularAjuste(new Date())) {
-                if(tempoRestante > 0) {
-                    document.getElementById('lbl-fim').classList.remove('ativo'); document.getElementById('display-screen').classList.remove('bg-panic'); el.classList.remove('piscando-vermelho', 'piscando-alerta-maximo'); el.style.color = cronograma[indexAtual].txt;
-                    if(intervaloTimer) clearInterval(intervaloTimer); intervaloTimer = setInterval(tick, 1000);
-                }
-            }
+            if (calcularAjuste(new Date())) { if(tempoRestante > 0) { document.getElementById('lbl-fim').classList.remove('ativo'); document.getElementById('display-screen').classList.remove('bg-panic'); el.classList.remove('piscando-vermelho', 'piscando-alerta-maximo'); el.style.color = cronograma[indexAtual].txt; if(intervaloTimer) clearInterval(intervaloTimer); intervaloTimer = setInterval(tick, 1000); } }
         }
-
         function acaoPausar(){ 
-            estado="PAUSADO"; clearInterval(intervaloTimer); if(activeAudio) activeAudio.el.pause();
+            estado="PAUSADO"; clearInterval(intervaloTimer); 
+            if(activeAudio && !activeAudio.el.paused) {
+                // Show Audio Modal
+                document.getElementById('modal-audio-pause').style.display = 'flex';
+            }
             document.getElementById('timer-principal').style.opacity="0.5"; document.getElementById('display-screen').classList.remove('bg-panic'); document.getElementById('lbl-fim').style.animationPlayState = 'paused'; atualizarBotoes(false);
         }
+
+        function resolverAudioPause(action) {
+            audioResumeAction = action;
+            document.getElementById('modal-audio-pause').style.display = 'none';
+            if(!activeAudio) return;
+
+            if(action === 'pause') {
+                activeAudio.el.pause();
+            } else if (action === 'restart') {
+                activeAudio.el.pause();
+                activeAudio.el.currentTime = 0;
+            } else if (action === 'stop') {
+                fadeAndStop(activeAudio, 0.5);
+            }
+            // 'continue' does nothing, just lets it play
+        }
+
         function acaoContinuar(){ 
             if(estado==="PAUSADO"){ 
-                if(document.getElementById('titulo-fase').innerText === "AGUARDANDO INÍCIO") {
-                    const hI = document.getElementById('hora-inicio').value; const dIni = montarData(hI, new Date()); iniciarEspera(dIni); document.getElementById('timer-principal').style.opacity="1"; atualizarBotoes(true); return;
-                }
+                if(document.getElementById('titulo-fase').innerText === "AGUARDANDO INÍCIO") { const hI = document.getElementById('hora-inicio').value; const dIni = montarData(hI, new Date()); iniciarEspera(dIni); document.getElementById('timer-principal').style.opacity="1"; atualizarBotoes(true); return; }
                 if(!document.getElementById('btn-intervalo-manual').classList.contains('hidden')) return; 
-                if(tempoRestante < 0 && (cronograma[indexAtual].permitirEstouro || indexAtual === cronograma.length-1)) {
-                    estado="RODANDO"; document.getElementById('timer-principal').style.opacity="1"; document.getElementById('lbl-fim').style.animationPlayState = 'running'; atualizarBotoes(true); intervaloTimer=setInterval(tickNegativo,1000); return;
+                
+                // Audio Resume Logic
+                if(activeAudio) {
+                    if(audioResumeAction === 'pause') activeAudio.el.play();
+                    else if(audioResumeAction === 'restart') activeAudio.el.play();
+                    // stop/continue handled previously
                 }
+                audioResumeAction = null;
+
+                if(tempoRestante < 0 && (cronograma[indexAtual].permitirEstouro || indexAtual === cronograma.length-1)) { estado="RODANDO"; document.getElementById('timer-principal').style.opacity="1"; document.getElementById('lbl-fim').style.animationPlayState = 'running'; atualizarBotoes(true); intervaloTimer=setInterval(tickNegativo,1000); return; }
                 if(!calcularAjuste(new Date())) return; 
                 estado=emIntervalo?"INTERVALO":"RODANDO"; 
-                if(activeAudio) activeAudio.el.play();
                 document.getElementById('timer-principal').style.opacity="1"; document.getElementById('lbl-fim').style.animationPlayState = 'running'; atualizarBotoes(true); intervaloTimer=setInterval(tick,1000); 
             }
         }
@@ -668,7 +643,7 @@
             if(calcularAjuste(new Date())){ const m=Math.floor(tempoRestante/60), s=tempoRestante%60; el.innerText=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; if(estado!=="RODANDO") acaoContinuar(); }
         }
         function acaoAvançar(){ 
-            if(estado === "WAITING" || document.getElementById('titulo-fase').innerText === "AGUARDANDO INÍCIO") { clearInterval(intervaloTimer); indexAtual = 0; rodarFase(0); } else { if(indexAtual < cronograma.length - 1) rodarFase(indexAtual + 1); }
+            if(estado === "WAITING" || document.getElementById('titulo-fase').innerText === "AGUARDANDO INÍCIO") { document.getElementById('timer-principal').classList.remove('timer-waiting'); clearInterval(intervaloTimer); indexAtual = 0; rodarFase(0); } else { if(indexAtual < cronograma.length - 1) rodarFase(indexAtual + 1); }
         }
         function calcularAjuste(now){
             if(indexAtual>=cronograma.length-1) return true;
