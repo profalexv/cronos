@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.59</title>
+    <title>cronos@alexandre.pro.br v1.60</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -20,7 +20,6 @@
         input, select { background: #333; color: white; border: 1px solid #555; padding: 8px; border-radius: 4px; }
         input:disabled { background: #222; color: #555; border-color: #333; cursor: not-allowed; }
 
-        /* Grupos de Input de Tempo */
         .time-group { display: flex; align-items: center; gap: 5px; }
         .btn-small { background: #444; border: 1px solid #666; color: #fff; width: 30px; height: 35px; border-radius: 4px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; padding: 0; transition: 0.2s; }
         .btn-small:hover:not(:disabled) { background: #00d2ff; color: #000; border-color: #00d2ff; }
@@ -294,7 +293,33 @@
     </div>
 
     <script>
-        document.getElementById('global-cor-titulo').addEventListener('input', e => document.getElementById('global-titulo').style.color = e.target.value);
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                document.getElementById('global-cor-titulo').addEventListener('input', e => document.getElementById('global-titulo').style.color = e.target.value);
+                
+                // Configuração Inicial de Data
+                const now = new Date(); 
+                const stdStart = new Date(now); stdStart.setHours(9,20,0,0);
+                let sVal="09:20", eVal="10:15";
+                if(now > stdStart){
+                    const h=String(now.getHours()).padStart(2,'0'), m=String(now.getMinutes()).padStart(2,'0'); sVal = `${h}:${m}`;
+                    const endD = new Date(now.getTime() + 55*60000); eVal = `${String(endD.getHours()).padStart(2,'0')}:${String(endD.getMinutes()).padStart(2,'0')}`;
+                }
+                document.getElementById('hora-inicio').value = sVal; document.getElementById('hora-fim').value = eVal;
+                
+                // Adicionar Fases Iniciais Padrão
+                adicionarFase("Confraternização", 10, true, "#ffcc00", "#ffffff");
+                adicionarFase("Missão", 15, true, "#28a745", "#ffffff");
+                adicionarFase("Estudo da Bíblia e Oração", 30, false, "#007bff", "#ffffff");
+                
+                // Relógio Real
+                setInterval(()=>{ document.getElementById('relogio-real').innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); },1000);
+
+            } catch (err) {
+                alert("Erro ao carregar o sistema: " + err.message);
+                console.error(err);
+            }
+        });
 
         // --- SISTEMA DE UI: IGNORAR/ATIVAR ---
         function toggleIgnorarInicio() {
@@ -396,45 +421,50 @@
         let pendingDataInicio = null;
 
         function iniciarApresentacao() {
-            const hI = document.getElementById('hora-inicio').value;
-            const hF = document.getElementById('hora-fim').value;
-            const ignorarI = document.getElementById('chk-ignorar-inicio').checked;
-            const ignorarF = document.getElementById('chk-ignorar-fim').checked;
+            try {
+                const hI = document.getElementById('hora-inicio').value;
+                const hF = document.getElementById('hora-fim').value;
+                const ignorarI = document.getElementById('chk-ignorar-inicio').checked;
+                const ignorarF = document.getElementById('chk-ignorar-fim').checked;
 
-            if(!ignorarI && !hI) return alert("Defina o Início.");
-            if(!ignorarF && !hF) return alert("Defina o Fim.");
+                if(!ignorarI && !hI) return alert("Defina o Início.");
+                if(!ignorarF && !hF) return alert("Defina o Fim.");
 
-            const now = new Date(); 
-            let dIni;
+                const now = new Date(); 
+                let dIni;
 
-            if(ignorarI) dIni = now; 
-            else dIni = montarData(hI, now);
+                if(ignorarI) dIni = now; 
+                else dIni = montarData(hI, now);
 
-            if(!ignorarF) {
-                dataFimGlobal = montarData(hF, now); 
-                if(dataFimGlobal < dIni) dataFimGlobal.setDate(dataFimGlobal.getDate()+1);
-            } else { dataFimGlobal = null; }
+                if(!ignorarF) {
+                    dataFimGlobal = montarData(hF, now); 
+                    if(dataFimGlobal < dIni) dataFimGlobal.setDate(dataFimGlobal.getDate()+1);
+                } else { dataFimGlobal = null; }
 
-            if(!ignorarI && now < dIni) {
-                const diffMs = dIni - now;
-                const diffMin = Math.floor(diffMs / 60000);
-                if(diffMin >= 1) {
-                    const h = Math.floor(diffMs / 3600000);
-                    const m = Math.floor((diffMs % 3600000) / 60000);
-                    document.getElementById('early-time').innerText = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-                    pendingDataInicio = dIni;
-                    surplusMinutes = diffMin;
-                    const firstRow = document.querySelector('.fase-row .inp-titulo');
-                    document.getElementById('lbl-first-phase').innerText = firstRow ? `(${firstRow.value})` : '';
-                    document.getElementById('modal-early-start').style.display = 'flex';
-                    return; 
-                } else {
-                    iniciarEspera(dIni); return;
+                if(!ignorarI && now < dIni) {
+                    const diffMs = dIni - now;
+                    const diffMin = Math.floor(diffMs / 60000);
+                    if(diffMin >= 1) {
+                        const h = Math.floor(diffMs / 3600000);
+                        const m = Math.floor((diffMs % 3600000) / 60000);
+                        document.getElementById('early-time').innerText = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+                        pendingDataInicio = dIni;
+                        surplusMinutes = diffMin;
+                        const firstRow = document.querySelector('.fase-row .inp-titulo');
+                        document.getElementById('lbl-first-phase').innerText = firstRow ? `(${firstRow.value})` : '';
+                        document.getElementById('modal-early-start').style.display = 'flex';
+                        return; 
+                    } else {
+                        iniciarEspera(dIni); return;
+                    }
                 }
-            }
 
-            construirCronograma();
-            rodarSistema(now);
+                construirCronograma();
+                rodarSistema(now);
+            } catch(e) {
+                alert("Erro ao Iniciar: " + e.message);
+                console.error(e);
+            }
         }
 
         function handleEarlyStart(choice) {
@@ -546,7 +576,11 @@
             indexAtual=0; rodarFase(0);
         }
 
-        // --- CORE (Mantido) ---
+        // --- CORE ---
+        let cronograma=[], indexAtual=0, tempoRestante=0, estado="PARADO", intervaloTimer=null, dataFimGlobal=null, emIntervalo=false;
+        let activeAudio = null; 
+        let audioResumeAction = null; 
+
         function iniciarEspera(target) {
             estado = "WAITING";
             document.getElementById('display-screen').style.display='flex';
