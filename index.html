@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.54</title>
+    <title>cronos@alexandre.pro.br v1.55</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -25,8 +25,8 @@
         }
         #global-titulo:focus { outline: 1px dashed #555; background: rgba(255,255,255,0.05); }
 
-        .btn-file { background: #444; border: 1px solid #666; color: #fff; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; }
-        .btn-file:hover { background: #555; border-color: #888; }
+        .btn-file { background: #444; border: 1px solid #666; color: #fff; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; text-decoration: none; }
+        .btn-file:hover { background: #555; border-color: #888; color: #fff; }
 
         .btn-icon { background: transparent; border: 1px solid #555; color: #aaa; width: 30px; height: 30px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .btn-icon:hover { background: #444; color: #fff; }
@@ -51,12 +51,13 @@
             display: flex; gap: 10px; align-items: flex-end; margin-bottom: 8px; 
             background: #222; padding: 8px; border-radius: 4px; border-left: 3px solid #00d2ff; flex-wrap: wrap; transition: opacity 0.3s;
         }
-        .audio-slot .grp { display: flex; flex-direction: column; transition: opacity 0.3s; }
+        .audio-slot .grp { display: flex; flex-direction: column; transition: opacity 0.3s, width 0.3s; }
         .audio-slot label { font-size: 0.7rem; color: #888; margin-bottom: 2px; }
         .audio-slot input[type="number"] { width: 50px; padding: 5px; font-size: 0.9rem; background: #333; border: 1px solid #555; }
         .aud-warn { color: #ffaa00; font-size: 0.8rem; font-style: italic; display: flex; align-items: center; gap: 5px; width: 100%; margin-top: 5px;}
         
         .grp.disabled { opacity: 0.3; pointer-events: none; }
+        .grp.vanish { display: none; }
 
         .col-intervalo { background: rgba(255, 170, 0, 0.15); padding: 5px; border-radius: 4px; display: flex; gap: 5px; border: 1px dashed #666; }
         .col-estouro { background: rgba(255, 68, 68, 0.15); padding: 5px; border-radius: 4px; display: flex; gap: 5px; border: 1px dashed #666; }
@@ -139,6 +140,8 @@
                 <label class="chk-label" data-tooltip="Se marcado, exibe este título na tela de apresentação."><input type="checkbox" id="chk-exibir-titulo" class="chk-input"> Exibir</label>
             </div>
             <div style="display:flex; gap:10px;">
+                <a href="manual.html" target="_blank" class="btn-file" data-tooltip="Ver Manual de Uso">❓ Manual</a>
+                <a href="sobre.html" target="_blank" class="btn-file" data-tooltip="Sobre o Projeto">ℹ️ Sobre</a>
                 <button class="btn-file" onclick="salvarConfiguracao()" data-tooltip="Salvar a programação.">💾 Salvar</button>
                 <button class="btn-file" onclick="document.getElementById('file-input').click()" data-tooltip="Carregar programação.">📂 Abrir</button>
             </div>
@@ -421,7 +424,6 @@
                     chkPlay.disabled = false; grpPlay.classList.remove('disabled');
                     chkCont.disabled = false; grpCont.classList.remove('disabled');
                     
-                    // Rule for StopZero: Only if NOT starting at 00:00
                     const m = parseInt(slot.querySelector('.aud-min').value) || 0;
                     const s = parseInt(slot.querySelector('.aud-sec').value) || 0;
                     
@@ -432,7 +434,6 @@
                     }
 
                 } else {
-                    // Not last slot: Disable all 3
                     chkPlay.checked = false; chkPlay.disabled = true; grpPlay.classList.add('disabled');
                     chkCont.checked = false; chkCont.disabled = true; grpCont.classList.add('disabled');
                     chkStop.checked = false; chkStop.disabled = true; grpStop.classList.add('disabled');
