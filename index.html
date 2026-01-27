@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.58</title>
+    <title>cronos@alexandre.pro.br v1.59</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -300,13 +300,11 @@
         function toggleIgnorarInicio() {
             const chk = document.getElementById('chk-ignorar-inicio');
             document.getElementById('hora-inicio').disabled = chk.checked;
-            // Desabilita botões
             document.querySelectorAll('#group-inicio button').forEach(b => b.disabled = chk.checked);
         }
         function toggleIgnorarFim() {
             const chk = document.getElementById('chk-ignorar-fim');
             document.getElementById('hora-fim').disabled = chk.checked;
-            // Desabilita botões
             document.querySelectorAll('#group-fim button').forEach(b => b.disabled = chk.checked);
         }
 
@@ -417,31 +415,24 @@
                 if(dataFimGlobal < dIni) dataFimGlobal.setDate(dataFimGlobal.getDate()+1);
             } else { dataFimGlobal = null; }
 
-            // Lógica de Inicio Antecipado
             if(!ignorarI && now < dIni) {
                 const diffMs = dIni - now;
                 const diffMin = Math.floor(diffMs / 60000);
-                
-                // Se faltar mais de 1 minuto, oferece opções. Menos que isso entra em espera direto.
                 if(diffMin >= 1) {
                     const h = Math.floor(diffMs / 3600000);
                     const m = Math.floor((diffMs % 3600000) / 60000);
                     document.getElementById('early-time').innerText = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
                     pendingDataInicio = dIni;
                     surplusMinutes = diffMin;
-                    
-                    // Prepara nome da primeira fase
                     const firstRow = document.querySelector('.fase-row .inp-titulo');
                     document.getElementById('lbl-first-phase').innerText = firstRow ? `(${firstRow.value})` : '';
-
                     document.getElementById('modal-early-start').style.display = 'flex';
-                    return; // PAUSA O PROCESSO AQUI
+                    return; 
                 } else {
                     iniciarEspera(dIni); return;
                 }
             }
 
-            // Se chegou aqui, é início normal ou ignorado
             construirCronograma();
             rodarSistema(now);
         }
@@ -451,7 +442,6 @@
             if(choice === 'wait') {
                 iniciarEspera(pendingDataInicio);
             } else {
-                // Iniciar Imediatamente -> Oferecer Distribuicao
                 document.getElementById('surplus-val').innerText = surplusMinutes;
                 document.getElementById('modal-surplus-dist').style.display = 'flex';
             }
@@ -487,8 +477,6 @@
                     });
                 } else { alert("Nenhuma fase flexível encontrada. Iniciando normal."); }
             }
-            // mode 'normal' faz nada, só roda com o que tem
-
             construirCronograma();
             rodarSistema(new Date());
         }
@@ -547,7 +535,6 @@
             } else {
                 document.getElementById('lbl-fim-absoluto').innerText = hF;
                 document.getElementById('lbl-fim-previsto').parentElement.style.display = 'flex';
-                // Checa atraso inicial se não for ignorado
                 if(dataFimGlobal) {
                     const plan = cronograma.reduce((a,b)=>a+b.minutosOrig,0);
                     const disp = (dataFimGlobal - now)/60000;
