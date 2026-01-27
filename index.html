@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.49</title>
+    <title>cronos@alexandre.pro.br v1.50</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -94,14 +94,12 @@
         .btn-ctrl:hover { background: rgba(255,255,255,0.2); }
         .btn-proximo { background: #ffaa00; color: #000; font-weight: bold; font-size: 1.5rem; padding: 15px 30px; border: none; border-radius: 50px; cursor: pointer; animation: pulse 2s infinite; margin-top: 20px; }
 
-        /* MODAL DE DECISÃO DE TEMPO */
         #modal-decisao { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; align-items: center; justify-content: center; }
         .modal-box { background: #222; padding: 30px; border-radius: 10px; border: 1px solid #ff4444; max-width: 500px; text-align: center; }
         .modal-opts { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
         .btn-modal { padding: 15px; border: none; background: #333; color: white; text-align: left; cursor: pointer; border-radius: 4px; }
         .btn-modal:hover { background: #444; }
 
-        /* MODAL DE PAUSA DE AUDIO */
         #modal-audio-pause { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 110; align-items: center; justify-content: center; }
         .audio-pause-box { background: #222; padding: 25px; border-radius: 10px; border: 1px solid #00d2ff; max-width: 400px; text-align: center; box-shadow: 0 0 30px rgba(0,210,255,0.3); }
         .audio-pause-opts { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
@@ -109,7 +107,6 @@
         
         #custom-tooltip { position: fixed; background: rgba(0, 0, 0, 0.95); border: 1px solid #00d2ff; color: #fff; padding: 10px 15px; border-radius: 6px; font-size: 0.9rem; pointer-events: none; z-index: 9999; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.8); max-width: 250px; line-height: 1.4; }
 
-        /* ANIMAÇÕES */
         .piscando-cor { animation: pulse-opacity 1s infinite; }
         @keyframes pulse-opacity { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.02); } }
         .piscando-vermelho { color: #ff4444 !important; animation: pulse-red 1s infinite; }
@@ -299,7 +296,7 @@
 
         let cronograma=[], indexAtual=0, tempoRestante=0, estado="PARADO", intervaloTimer=null, dataFimGlobal=null, emIntervalo=false;
         let activeAudio = null; 
-        let audioResumeAction = null; // 'continue', 'resume', 'restart', 'stop'
+        let audioResumeAction = null; 
 
         window.onload = function() {
             const now = new Date(); const stdStart = new Date(now); stdStart.setHours(9,20,0,0);
@@ -366,7 +363,7 @@
             const div = document.createElement('div'); div.className = 'audio-slot';
             const aviso = fname ? `<span class="aud-warn">⚠️ Re-selecione: ${fname}</span>` : '';
             div.innerHTML = `
-                <div class="grp"><label>Disparo</label><div><input type="number" class="aud-min" value="${min}" placeholder="Min">:<input type="number" class="aud-sec" value="${sec}" placeholder="Seg"></div></div>
+                <div class="grp"><label>Disparo</label><div><input type="number" class="aud-min" value="${min}" placeholder="Min" oninput="verificarLogicaAudio(this.closest('.audio-slot'))">:<input type="number" class="aud-sec" value="${sec}" placeholder="Seg" oninput="verificarLogicaAudio(this.closest('.audio-slot'))"></div></div>
                 <div class="grp"><label>Arquivo</label><input type="file" class="aud-file" accept="audio/*"></div>
                 <div class="grp"><label>Duração(s)</label><input type="number" class="aud-dur" value="${dur}" placeholder="0=Tudo"></div>
                 <div class="grp"><label>Loop</label><input type="checkbox" class="aud-loop" ${loop?'checked':''} style="width:20px;height:20px;"></div>
@@ -377,6 +374,23 @@
                 ${aviso}
             `;
             list.appendChild(div);
+            verificarLogicaAudio(div); // Estado inicial
+        }
+
+        function verificarLogicaAudio(slot) {
+            const m = parseInt(slot.querySelector('.aud-min').value)||0;
+            const s = parseInt(slot.querySelector('.aud-sec').value)||0;
+            const chkStop = slot.querySelector('.aud-stopzero');
+            if(m===0 && s===0) {
+                chkStop.checked = false;
+                chkStop.disabled = true;
+                chkStop.parentElement.style.opacity = "0.5";
+                chkStop.parentElement.title = "Áudio inicia no estouro, não pode ser cortado pelo início do estouro.";
+            } else {
+                chkStop.disabled = false;
+                chkStop.parentElement.style.opacity = "1";
+                chkStop.parentElement.title = "";
+            }
         }
 
         function iniciarApresentacao() {
@@ -411,7 +425,7 @@
                     segundosFinais: parseFloat(row.querySelector('.inp-tempo').value)*60, redutivel: row.querySelector('.inp-redutivel').checked,
                     intSegundos: parseInt(row.querySelector('.inp-int-tempo').value)||0, intManual: row.querySelector('.inp-int-manual').checked,
                     permitirEstouro: row.querySelector('.inp-estouro-fase').checked, beep: row.querySelector('.inp-beep-fase').checked,
-                    aviso: parseInt(row.querySelector('.inp-aviso').value), bg: row.querySelector('.inp-bg').value, txt: row.querySelector('.inp-txt').value, img: url,
+                    aviso: parseInt(row.querySelector('.inp-aviso').value), bg: r.querySelector('.inp-bg').value, txt: r.querySelector('.inp-txt').value, img: url,
                     customAudios: customAudios
                 });
             });
@@ -461,12 +475,8 @@
             const audio = new Audio(config.src); audio.loop = config.loop; audio.volume = 0; 
             audio.play().catch(e => console.log(e));
             
-            // Atribui flags para controle de lógica
-            audio.customFlags = { 
-                playThrough: config.playThrough, 
-                stopAtZero: config.stopAtZero,
-                srcConfig: config // reference
-            };
+            // Flags
+            audio.customFlags = { playThrough: config.playThrough, stopAtZero: config.stopAtZero };
 
             let vol = 0; const fadeInTime = config.fadeIn * 1000; const stepTime = 50; const stepVol = 1 / (fadeInTime / stepTime);
             const fadeInInterval = setInterval(() => { if(audio.volume < 1 - stepVol) audio.volume += stepVol; else { audio.volume = 1; clearInterval(fadeInInterval); } }, stepTime);
@@ -485,17 +495,10 @@
         }
 
         function rodarFase(idx) {
-            // Se o audio atual tem flag playThrough e NÃO tem stopAtZero, deixa ele viver.
-            // Caso contrário, mata.
             if(activeAudio) {
                 const flags = activeAudio.el.customFlags;
-                if(flags && flags.playThrough && !flags.stopAtZero) {
-                    // Deixa tocando...
-                } else {
-                    fadeAndStop(activeAudio, 3);
-                }
+                if(flags && flags.playThrough && !flags.stopAtZero) { /* Deixa tocando */ } else { fadeAndStop(activeAudio, 3); }
             }
-
             indexAtual=idx; const fase=cronograma[idx]; tempoRestante=fase.segundosFinais; emIntervalo=false; estado="RODANDO";
             aplicarVisual(fase); atualizarBotoes(true);
             const btnAv = document.getElementById('btn-avancar');
@@ -508,13 +511,11 @@
         function tick() {
             if(estado!=="RODANDO" && estado!=="INTERVALO") return;
             
-            // Check Audio Triggers
             if(estado === "RODANDO" && !emIntervalo && document.getElementById('chk-audio-global').checked) {
                 const fase = cronograma[indexAtual];
                 if(fase.customAudios) { fase.customAudios.forEach(aud => { if(aud.trigger === tempoRestante) playSmartAudio(aud); }); }
             }
 
-            // Check Stop At Zero Rule
             if(tempoRestante === 0 && activeAudio && activeAudio.el.customFlags && activeAudio.el.customFlags.stopAtZero) {
                 fadeAndStop(activeAudio, 1);
             }
@@ -544,7 +545,8 @@
 
         function tickNegativo() {
             if(estado!=="RODANDO") return;
-            // Check for 0s triggers that happen during overflow start (usually covered in tick, but safety check)
+            
+            // Check 0s triggers no estouro
             if(tempoRestante === 0 && document.getElementById('chk-audio-global').checked && !emIntervalo) {
                  const fase = cronograma[indexAtual];
                  if(fase.customAudios) { fase.customAudios.forEach(aud => { if(aud.trigger === 0) playSmartAudio(aud); }); }
@@ -593,27 +595,16 @@
         }
         function acaoPausar(){ 
             estado="PAUSADO"; clearInterval(intervaloTimer); 
-            if(activeAudio && !activeAudio.el.paused) {
-                // Show Audio Modal
-                document.getElementById('modal-audio-pause').style.display = 'flex';
-            }
+            if(activeAudio && !activeAudio.el.paused) { document.getElementById('modal-audio-pause').style.display = 'flex'; }
             document.getElementById('timer-principal').style.opacity="0.5"; document.getElementById('display-screen').classList.remove('bg-panic'); document.getElementById('lbl-fim').style.animationPlayState = 'paused'; atualizarBotoes(false);
         }
 
         function resolverAudioPause(action) {
-            audioResumeAction = action;
-            document.getElementById('modal-audio-pause').style.display = 'none';
+            audioResumeAction = action; document.getElementById('modal-audio-pause').style.display = 'none';
             if(!activeAudio) return;
-
-            if(action === 'pause') {
-                activeAudio.el.pause();
-            } else if (action === 'restart') {
-                activeAudio.el.pause();
-                activeAudio.el.currentTime = 0;
-            } else if (action === 'stop') {
-                fadeAndStop(activeAudio, 0.5);
-            }
-            // 'continue' does nothing, just lets it play
+            if(action === 'pause') { activeAudio.el.pause(); } 
+            else if (action === 'restart') { activeAudio.el.pause(); activeAudio.el.currentTime = 0; } 
+            else if (action === 'stop') { fadeAndStop(activeAudio, 0.5); }
         }
 
         function acaoContinuar(){ 
@@ -621,18 +612,15 @@
                 if(document.getElementById('titulo-fase').innerText === "AGUARDANDO INÍCIO") { const hI = document.getElementById('hora-inicio').value; const dIni = montarData(hI, new Date()); iniciarEspera(dIni); document.getElementById('timer-principal').style.opacity="1"; atualizarBotoes(true); return; }
                 if(!document.getElementById('btn-intervalo-manual').classList.contains('hidden')) return; 
                 
-                // Audio Resume Logic
                 if(activeAudio) {
                     if(audioResumeAction === 'pause') activeAudio.el.play();
                     else if(audioResumeAction === 'restart') activeAudio.el.play();
-                    // stop/continue handled previously
                 }
                 audioResumeAction = null;
 
                 if(tempoRestante < 0 && (cronograma[indexAtual].permitirEstouro || indexAtual === cronograma.length-1)) { estado="RODANDO"; document.getElementById('timer-principal').style.opacity="1"; document.getElementById('lbl-fim').style.animationPlayState = 'running'; atualizarBotoes(true); intervaloTimer=setInterval(tickNegativo,1000); return; }
                 if(!calcularAjuste(new Date())) return; 
-                estado=emIntervalo?"INTERVALO":"RODANDO"; 
-                document.getElementById('timer-principal').style.opacity="1"; document.getElementById('lbl-fim').style.animationPlayState = 'running'; atualizarBotoes(true); intervaloTimer=setInterval(tick,1000); 
+                estado=emIntervalo?"INTERVALO":"RODANDO"; document.getElementById('timer-principal').style.opacity="1"; document.getElementById('lbl-fim').style.animationPlayState = 'running'; atualizarBotoes(true); intervaloTimer=setInterval(tick,1000); 
             }
         }
         function acaoReiniciarFase(){ 
