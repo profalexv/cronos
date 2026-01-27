@@ -1,4 +1,1 @@
-Cronometro para uso da Escola Sabatina adaptável para uso geral.
-Em desenvolvimento. Algumas funcionalidades podem apresentar problemas.
-Novas implementações poderão ser realizadas a qualquer momento.
-​"Desenvolvido por Alexandre Vieira. Licenciado sob GPLv3. Sinta-se livre para fazer fork e contribuir."
+"Cronômetro web desenvolvido primariamente para o gerenciamento de tempo da Escola Sabatina, mas com flexibilidade para uso em eventos gerais. O projeto encontra-se em desenvolvimento ativo, sujeito a alterações e novas implementações a qualquer momento. Desenvolvido por Alexandre Vieira e distribuído sob a licença GPLv3. A comunidade é encorajada a realizar forks e contribuir com o código."

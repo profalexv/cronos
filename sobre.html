@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sobre o Projeto & Autor - Cronos</title>
+    <style>
+        /* --- ESTILO VISUAL (Identidade Cronos v1.54) --- */
+        :root {
+            --bg-color: #121212;
+            --surface-color: #1e1e1e;
+            --text-color: #e0e0e0;
+            --accent-color: #00d2ff;
+            --secondary-accent: #28a745;
+            --highlight-color: #2a2a2a;
+            --border-color: #444;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            line-height: 1.8;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            padding: 40px 20px;
+        }
+
+        /* CABEÇALHO */
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 40px;
+        }
+
+        h1 {
+            color: var(--accent-color);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 1.1rem;
+            font-weight: 300;
+        }
+
+        /* SEÇÕES */
+        section {
+            margin-bottom: 60px;
+            background: var(--surface-color);
+            padding: 30px;
+            border-radius: 10px;
+            border-left: 5px solid var(--accent-color);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        h2 {
+            color: #fff;
+            margin-top: 0;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        p { margin-bottom: 20px; color: #ccc; }
+
+        /* LINKS E BOTÕES */
+        a {
+            color: var(--accent-color);
+            text-decoration: none;
+            transition: 0.3s;
+            border-bottom: 1px dashed var(--accent-color);
+        }
+        a:hover { color: #fff; border-bottom-style: solid; }
+
+        .btn-back {
+            display: inline-block;
+            background: transparent;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 20px;
+            border-bottom: none;
+        }
+        .btn-back:hover {
+            background: var(--accent-color);
+            color: #000;
+        }
+
+        /* GRID DE DETALHES */
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .card {
+            background: var(--bg-color);
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+        }
+        .card strong { color: #fff; display: block; margin-bottom: 5px; }
+
+        /* RODAPÉ */
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            color: #555;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <header>
+            <h1>Cronos</h1>
+            <div class="subtitle">Gestão de Tempo para Comunidades e Educação</div>
+            <a href="index.html" class="btn-back">← Voltar ao Cronômetro</a>
+        </header>
+
+        <section>
+            <h2>🚀 Sobre o Projeto</h2>
+            <p>
+                O <strong>Cronos</strong> nasceu de uma necessidade prática observada na rotina das Escolas Sabatinas e eventos comunitários: a dificuldade de gerenciar o tempo com precisão sem perder a reverência e a organização.
+            </p>
+            <p>
+                Diferente de cronômetros genéricos, o Cronos foi desenhado para ser uma <strong>ferramenta de palco</strong>. Ele opera 100% offline, garantindo que falhas de internet não interrompam a programação, e integra um sistema avançado de áudio que atua como uma "mesa de som automática", realizando cortes, loops e transições suaves (crossfades) sem intervenção manual.
+            </p>
+            <div class="grid">
+                <div class="card">
+                    <strong>Filosofia Open Source</strong>
+                    Distribuído sob a licença <em>GPLv3</em>, garantindo que o conhecimento e a tecnologia permaneçam acessíveis e modificáveis pela comunidade.
+                </div>
+                <div class="card">
+                    <strong>Tecnologia</strong>
+                    Construído com tecnologias web modernas (HTML5, CSS3, JS), rodando diretamente no navegador do usuário (Client-Side) para máxima privacidade e leveza.
+                </div>
+            </div>
+        </section>
+
+        <section style="border-left-color: var(--secondary-accent);">
+            <h2>👨‍🏫 Sobre o Autor</h2>
+            <p>
+                Desenvolvido por <strong>Alexandre Vieira</strong>, professor e pesquisador residente na região de Mafra/Rio Negro. 
+            </p>
+            <p>
+                Com uma trajetória acadêmica voltada para a <strong>Educação e Filosofia</strong>, Alexandre explora em seus trabalhos o desenvolvimento do raciocínio crítico em uma "sociedade líquida" e a interseção entre ensino, história e espiritualidade. Seu interesse abrange desde a filosofia clássica e patrística até a história da educação adventista na região sul do Brasil.
+            </p>
+            <p>
+                Entusiasta da tecnologia e adepto do software livre (usuário de Linux/KDE), ele une sua experiência pedagógica com a programação para criar ferramentas que auxiliem no ensino e na organização comunitária. O <em>Cronos</em> é o resultado dessa fusão: uma solução técnica para um problema humano de organização.
+            </p>
+            
+            <div style="margin-top: 30px;">
+                <strong>Conheça mais publicações e projetos em:</strong><br>
+                <a href="https://alexandre.pro.br" target="_blank">www.alexandre.pro.br</a>
+            </div>
+        </section>
+
+        <footer>
+            <p>
+                &copy; 2026 Alexandre Vieira.<br>
+                <em>"Ensino, Tecnologia e Pensamento Crítico."</em>
+            </p>
+        </footer>
+
+    </div>
+
+</body>
+</html>

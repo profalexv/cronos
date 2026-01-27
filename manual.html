@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual do Usuário - Cronos</title>
+    <style>
+        /* --- ESTILO VISUAL (Baseado no Cronos v1.54) --- */
+        :root {
+            --bg-color: #121212;
+            --surface-color: #1e1e1e;
+            --text-color: #e0e0e0;
+            --accent-color: #00d2ff;
+            --highlight-color: #2a2a2a;
+            --border-color: #444;
+            --warning-color: #ffaa00;
+            --danger-color: #ff4444;
+            --success-color: #28a745;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            line-height: 1.6;
+            display: flex;
+        }
+
+        /* --- SIDEBAR DE NAVEGAÇÃO --- */
+        nav {
+            width: 250px;
+            background-color: var(--surface-color);
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+        }
+
+        nav h1 {
+            color: var(--accent-color);
+            margin-top: 0;
+            font-size: 1.5rem;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+        }
+
+        nav ul { list-style: none; padding: 0; }
+        nav li { margin-bottom: 10px; }
+        nav a {
+            color: #aaa;
+            text-decoration: none;
+            display: block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: 0.2s;
+        }
+        nav a:hover { background-color: var(--highlight-color); color: #fff; }
+
+        /* --- CONTEÚDO PRINCIPAL --- */
+        main {
+            margin-left: 250px;
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        section { margin-bottom: 60px; scroll-margin-top: 20px; }
+        
+        h2 {
+            color: var(--accent-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        h3 { color: #fff; margin-top: 30px; }
+
+        p, li { color: #ccc; }
+
+        strong { color: #fff; }
+
+        /* Caixas de Destaque */
+        .box {
+            background-color: var(--highlight-color);
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid var(--accent-color);
+            margin: 15px 0;
+        }
+
+        .box.warning { border-left-color: var(--warning-color); background: rgba(255, 170, 0, 0.1); }
+        .box.tip { border-left-color: var(--success-color); background: rgba(40, 167, 69, 0.1); }
+
+        code {
+            background-color: #000;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: var(--accent-color);
+        }
+
+        /* Tabela Simples */
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid var(--border-color); padding: 10px; text-align: left; }
+        th { background-color: var(--surface-color); color: var(--accent-color); }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            nav { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 1px solid var(--border-color); }
+            main { margin-left: 0; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <h1>Cronos v1.54</h1>
+        <ul>
+            <li><a href="#intro">Introdução</a></li>
+            <li><a href="#config-global">Configuração Global</a></li>
+            <li><a href="#fases">Configurando Fases</a></li>
+            <li><a href="#audio">Motor de Áudio (Avançado)</a></li>
+            <li><a href="#apresentacao">Modo Apresentação</a></li>
+            <li><a href="#salvar">Salvar e Carregar</a></li>
+            <li><a href="#licenca">Licença</a></li>
+        </ul>
+        <div style="margin-top: 50px; font-size: 0.8rem; color: #666;">
+            Desenvolvido por<br>Alexandre Vieira<br>
+            <a href="https://alexandre.pro.br" target="_blank" style="padding:0; color:#00d2ff;">alexandre.pro.br</a>
+        </div>
+    </nav>
+
+    <main>
+        <section id="intro">
+            <h2>Introdução</h2>
+            <p>O <strong>Cronos</strong> é uma ferramenta web de código aberto desenvolvida para o gerenciamento de tempo em eventos ao vivo, com foco especial na dinâmica da Escola Sabatina. Ele opera 100% offline no navegador do cliente, garantindo privacidade e estabilidade.</p>
+            
+            <div class="box tip">
+                <strong>Destaques:</strong>
+                <ul>
+                    <li>Funciona sem internet.</li>
+                    <li>Sistema de áudio avançado com transições suaves (fades) e pontes sonoras.</li>
+                    <li>Cálculo automático de atrasos.</li>
+                    <li>Alertas visuais de pânico.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="config-global">
+            <h2>Configuração Global</h2>
+            <p>No topo da tela de configuração, você define as regras gerais do evento.</p>
+            
+            <ul>
+                <li><strong>Título Global:</strong> O nome do evento (ex: "Escola Sabatina"). Use o seletor de cor ao lado para personalizar. Marque "Exibir" para mostrá-lo no telão.</li>
+                <li><strong>Início Planejado:</strong> O horário oficial de início. 
+                    <br><em>Nota: Se você iniciar o cronômetro antes desse horário, o sistema entrará em "Modo de Espera" com um relógio reduzido até dar a hora.</em></li>
+                <li><strong>Fim Absoluto:</strong> O horário limite para o término de tudo. O sistema usa isso para calcular se o evento está atrasado.</li>
+            </ul>
+
+            <h3>Opções de Checkbox</h3>
+            <table>
+                <tr>
+                    <th>Opção</th>
+                    <th>Descrição</th>
+                </tr>
+                <tr>
+                    <td><strong>Intervalos</strong></td>
+                    <td>Habilita a lógica de pausas entre as fases. Se desmarcado, uma fase começa imediatamente após a outra.</td>
+                </tr>
+                <tr>
+                    <td><strong>Permitir Estouro</strong></td>
+                    <td>Se marcado, quando o tempo chega a 00:00, o relógio continua contando negativo (vermelho). Se desmarcado, ele para ou pula para a próxima fase.</td>
+                </tr>
+                <tr>
+                    <td><strong>Permitir Áudio</strong></td>
+                    <td>Chave geral de som. Se desmarcada, o sistema fica totalmente mudo.</td>
+                </tr>
+            </table>
+        </section>
+
+        <section id="fases">
+            <h2>Configurando Fases</h2>
+            <p>Cada linha representa uma parte do programa (ex: "Boas Vindas", "Lição", "Encerramento").</p>
+
+            <ul>
+                <li><strong>Título:</strong> Nome da parte que aparece grande no telão.</li>
+                <li><strong>Min:</strong> Duração em minutos.</li>
+                <li><strong>Redut? (Redutível):</strong> Marque se esta parte pode ter seu tempo encurtado caso o evento esteja atrasado. O sistema tentará tirar tempo daqui primeiro.</li>
+                <li><strong>Estouro?:</strong> Se marcado, esta fase específica permite contagem negativa.</li>
+                <li><strong>Beep?:</strong> Emite bips de aviso (1 minuto, 30s, 10s e fim).</li>
+                <li><strong>Pausa/Clique:</strong> Define se haverá um intervalo automático (segundos) ou se o sistema deve esperar um clique manual para avançar.</li>
+                <li><strong>Bg/Txt/Img:</strong> Personalize a cor de fundo, cor do texto ou selecione uma imagem de fundo para esta fase.</li>
+            </ul>
+        </section>
+
+        <section id="audio">
+            <h2>Motor de Áudio (Avançado)</h2>
+            <p>Clicando no ícone musical 🎵 de uma fase, você abre o painel de áudio avançado. O Cronos funciona como uma mesa de som automatizada.</p>
+
+            <div class="box warning">
+                <strong>Importante:</strong> Utilize apenas arquivos de áudio locais (MP3, WAV) armazenados no seu computador para garantir execução instantânea e sem falhas de internet.
+            </div>
+
+            <h3>Configurações de Faixa</h3>
+            <ul>
+                <li><strong>Disparo (Min:Sec):</strong> O tempo restante no cronômetro para o áudio começar. 
+                    <br><em>Ex: <code>0:10</code> toca faltando 10 segundos. <code>0:00</code> toca no início do estouro.</em></li>
+                <li><strong>Duração:</strong> Quanto tempo o áudio deve tocar. Deixe <code>0</code> ou vazio para tocar o arquivo inteiro.</li>
+                <li><strong>Loop:</strong> Se marcado, o áudio repete indefinidamente.</li>
+                <li><strong>Fade In/Out:</strong> Tempo (em segundos) para aumentar e diminuir o volume suavemente.</li>
+            </ul>
+
+            <h3>Regras de Finalização (Lógica de Exclusividade)</h3>
+            <p>Estas opções aparecem <strong>apenas para o último áudio configurado</strong> na lista (aquele que toca mais próximo do fim), pois ele controla a transição.</p>
+
+            <table>
+                <tr>
+                    <th>Opção</th>
+                    <th>Comportamento</th>
+                </tr>
+                <tr>
+                    <td><strong>Até Fim?</strong></td>
+                    <td>O áudio continua tocando mesmo se o tempo acabar e entrar no "Estouro" ou no "Intervalo". Ele só para se a faixa acabar ou se você mudar de fase manualmente.</td>
+                </tr>
+                <tr>
+                    <td><strong>Parar 0s?</strong></td>
+                    <td>Força o áudio a fazer um Fade Out e encerrar exatamente quando o relógio bater <code>00:00</code>. Ideal para contagens regressivas rígidas.</td>
+                </tr>
+                <tr>
+                    <td><strong>Cont. Próx?</strong><br>(Ponte Sonora)</td>
+                    <td>O áudio <strong>não para</strong> na troca de fase. Ele continua tocando como fundo na próxima parte até que um novo áudio específico da nova fase precise entrar.</td>
+                </tr>
+            </table>
+        </section>
+
+        <section id="apresentacao">
+            <h2>Modo Apresentação</h2>
+            <p>Ao clicar em <strong>INICIAR ▷</strong>, o sistema entra em tela cheia.</p>
+
+            <h3>Códigos de Cores do Timer</h3>
+            <ul>
+                <li><span style="color:#fff">Branco/Cor da Fase:</span> Tempo normal.</li>
+                <li><span style="color:#ffaa00">Amarelo (Piscando):</span> Tempo de aviso (finalzinho).</li>
+                <li><span style="color:#ff4444">Vermelho:</span> Tempo esgotado (Estouro).</li>
+                <li><strong>Fundo Vermelho Piscante:</strong> Pânico (Estouro crítico acima de 30s).</li>
+            </ul>
+
+            <h3>Controles Especiais</h3>
+            <ul>
+                <li><strong>+1 Min:</strong> Adiciona 1 minuto ao tempo atual sem afetar a programação global.</li>
+                <li><strong>PAUSAR:</strong> Para o cronômetro. Se houver música tocando, abre um menu perguntando se deseja:
+                    <ul>
+                        <li>🔊 Manter áudio tocando (fundo).</li>
+                        <li>⏸️ Pausar áudio.</li>
+                        <li>⏹️ Parar áudio.</li>
+                    </ul>
+                </li>
+            </ul>
+        </section>
+
+        <section id="salvar">
+            <h2>Salvar e Carregar</h2>
+            <p>Você pode salvar sua programação completa clicando em <strong>💾 Salvar</strong>. Um arquivo <code>.json</code> será baixado.</p>
+            
+            <div class="box warning">
+                <strong>Atenção com Arquivos de Áudio e Imagem:</strong><br>
+                Por segurança, os navegadores <strong>não permitem</strong> que o sistema salve os arquivos de música dentro do arquivo de configuração. 
+                <br><br>
+                Ao carregar um backup, o sistema lembrará de todas as configurações de tempo e regras, mas mostrará um aviso amarelo: <br>
+                <em>"⚠️ Re-selecione: abertura.mp3"</em>. <br>
+                Você precisará clicar e selecionar o arquivo novamente no seu computador.
+            </div>
+        </section>
+
+        <section id="licenca">
+            <h2>Licença</h2>
+            <p>O Cronos é um Software Livre.</p>
+            <p><strong>Licença:</strong> GNU General Public License v3.0 (GPLv3)</p>
+            <p>Você é livre para usar, estudar, modificar e distribuir este software, desde que mantenha a mesma licença e os créditos do autor original.</p>
+        </section>
+
+    </main>
+
+</body>
+</html>
