@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.52</title>
+    <title>cronos@alexandre.pro.br v1.54</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -51,13 +51,12 @@
             display: flex; gap: 10px; align-items: flex-end; margin-bottom: 8px; 
             background: #222; padding: 8px; border-radius: 4px; border-left: 3px solid #00d2ff; flex-wrap: wrap; transition: opacity 0.3s;
         }
-        .audio-slot .grp { display: flex; flex-direction: column; transition: opacity 0.3s, width 0.3s; }
+        .audio-slot .grp { display: flex; flex-direction: column; transition: opacity 0.3s; }
         .audio-slot label { font-size: 0.7rem; color: #888; margin-bottom: 2px; }
         .audio-slot input[type="number"] { width: 50px; padding: 5px; font-size: 0.9rem; background: #333; border: 1px solid #555; }
         .aud-warn { color: #ffaa00; font-size: 0.8rem; font-style: italic; display: flex; align-items: center; gap: 5px; width: 100%; margin-top: 5px;}
         
         .grp.disabled { opacity: 0.3; pointer-events: none; }
-        .grp.vanish { display: none; }
 
         .col-intervalo { background: rgba(255, 170, 0, 0.15); padding: 5px; border-radius: 4px; display: flex; gap: 5px; border: 1px dashed #666; }
         .col-estouro { background: rgba(255, 68, 68, 0.15); padding: 5px; border-radius: 4px; display: flex; gap: 5px; border: 1px dashed #666; }
@@ -373,9 +372,9 @@
                 <div class="grp"><label>Duração(s)</label><input type="number" class="aud-dur" value="${dur}" placeholder="0=Tudo"></div>
                 <div class="grp"><label>Loop</label><input type="checkbox" class="aud-loop" ${loop?'checked':''} style="width:20px;height:20px;"></div>
                 <div class="grp"><label>Fade In/Out</label><div><input type="number" class="aud-fin" value="${fin}" style="width:30px">/<input type="number" class="aud-fout" value="${fout}" style="width:30px"></div></div>
-                <div class="grp grp-playthrough"><label data-tooltip="Tocar até o fim (entra no estouro)">Até Fim?</label><input type="checkbox" class="aud-playthrough" ${playThrough?'checked':''} style="width:20px;height:20px;"></div>
-                <div class="grp grp-stopzero"><label data-tooltip="Cortar em 00:00">Parar 0s?</label><input type="checkbox" class="aud-stopzero" ${stopZero?'checked':''} style="width:20px;height:20px;"></div>
-                <div class="grp grp-continue"><label data-tooltip="Continuar na próxima fase (fundo)">Cont. Próx?</label><input type="checkbox" class="aud-continue" ${continueNext?'checked':''} style="width:20px;height:20px;" onchange="recalcularOpcoesAudio(this.closest('.fase-wrapper'))"></div>
+                <div class="grp grp-playthrough"><label data-tooltip="Tocar até o fim (entra no estouro)">Até Fim?</label><input type="checkbox" class="aud-playthrough" ${playThrough?'checked':''} style="width:20px;height:20px;" onchange="ensureExclusive(this)"></div>
+                <div class="grp grp-stopzero"><label data-tooltip="Cortar em 00:00">Parar 0s?</label><input type="checkbox" class="aud-stopzero" ${stopZero?'checked':''} style="width:20px;height:20px;" onchange="ensureExclusive(this)"></div>
+                <div class="grp grp-continue"><label data-tooltip="Continuar na próxima fase (fundo)">Cont. Próx?</label><input type="checkbox" class="aud-continue" ${continueNext?'checked':''} style="width:20px;height:20px;" onchange="ensureExclusive(this)"></div>
                 <button class="btn-x" style="width:20px; height:20px;" onclick="let w=this.closest('.fase-wrapper'); this.parentElement.remove(); recalculateOpcoesAudio(w);">X</button>
                 ${aviso}
             `;
@@ -383,7 +382,18 @@
             recalcularOpcoesAudio(panel.parentElement);
         }
 
-        // --- INTEELIGÊNCIA DE UI DE ÁUDIO ---
+        function ensureExclusive(checkbox) {
+            if(!checkbox.checked) return;
+            const slot = checkbox.closest('.audio-slot');
+            const chkPlay = slot.querySelector('.aud-playthrough');
+            const chkStop = slot.querySelector('.aud-stopzero');
+            const chkCont = slot.querySelector('.aud-continue');
+
+            if(checkbox === chkPlay) { chkStop.checked = false; chkCont.checked = false; }
+            if(checkbox === chkStop) { chkPlay.checked = false; chkCont.checked = false; }
+            if(checkbox === chkCont) { chkPlay.checked = false; chkStop.checked = false; }
+        }
+
         function recalcularOpcoesAudio(wrapper) {
             if(!wrapper) return;
             const slots = Array.from(wrapper.querySelectorAll('.audio-slot'));
@@ -396,17 +406,6 @@
                 const m = parseInt(slot.querySelector('.aud-min').value) || 0;
                 const s = parseInt(slot.querySelector('.aud-sec').value) || 0;
                 const totalSec = (m * 60) + s;
-                
-                // Configuração Parar 0s
-                const grpStop = slot.querySelector('.grp-stopzero');
-                const chkStop = slot.querySelector('.aud-stopzero');
-                
-                if(totalSec === 0) {
-                    chkStop.checked = false; chkStop.disabled = true; grpStop.classList.add('disabled'); grpStop.title = "Incompatível: Áudio inicia em 0s";
-                } else {
-                    chkStop.disabled = false; grpStop.classList.remove('disabled'); grpStop.title = "";
-                }
-
                 if(totalSec < minTime) { minTime = totalSec; lastSlot = slot; }
             });
 
@@ -415,31 +414,28 @@
                 const chkPlay = slot.querySelector('.aud-playthrough');
                 const grpCont = slot.querySelector('.grp-continue');
                 const chkCont = slot.querySelector('.aud-continue');
-                const grpStop = slot.querySelector('.grp-stopzero'); // Refetch for visibility toggle
+                const grpStop = slot.querySelector('.grp-stopzero');
+                const chkStop = slot.querySelector('.aud-stopzero');
 
                 if(slot === lastSlot) {
-                    // É o último audio
-                    grpPlay.classList.remove('disabled'); chkPlay.disabled = false;
-                    grpCont.classList.remove('disabled'); chkCont.disabled = false;
-
-                    // Se Continuar Próxima estiver marcado, esconde Até Fim e Parar 0s
-                    if(chkCont.checked) {
-                        grpPlay.classList.add('vanish');
-                        grpStop.classList.add('vanish');
-                        // Uncheck implicitamente para não dar conflito lógico se desmarcar depois
-                        chkPlay.checked = false; 
-                        // chkStop já tratado acima, mas visualmente some
+                    chkPlay.disabled = false; grpPlay.classList.remove('disabled');
+                    chkCont.disabled = false; grpCont.classList.remove('disabled');
+                    
+                    // Rule for StopZero: Only if NOT starting at 00:00
+                    const m = parseInt(slot.querySelector('.aud-min').value) || 0;
+                    const s = parseInt(slot.querySelector('.aud-sec').value) || 0;
+                    
+                    if(m===0 && s===0) {
+                        chkStop.checked = false; chkStop.disabled = true; grpStop.classList.add('disabled');
                     } else {
-                        grpPlay.classList.remove('vanish');
-                        grpStop.classList.remove('vanish');
+                        chkStop.disabled = false; grpStop.classList.remove('disabled');
                     }
 
                 } else {
-                    // Não é o último
+                    // Not last slot: Disable all 3
                     chkPlay.checked = false; chkPlay.disabled = true; grpPlay.classList.add('disabled');
                     chkCont.checked = false; chkCont.disabled = true; grpCont.classList.add('disabled');
-                    grpPlay.classList.remove('vanish'); // Garante que apareça (desabilitado)
-                    grpStop.classList.remove('vanish');
+                    chkStop.checked = false; chkStop.disabled = true; grpStop.classList.add('disabled');
                 }
             });
         }
@@ -477,7 +473,7 @@
                     segundosFinais: parseFloat(row.querySelector('.inp-tempo').value)*60, redutivel: row.querySelector('.inp-redutivel').checked,
                     intSegundos: parseInt(row.querySelector('.inp-int-tempo').value)||0, intManual: row.querySelector('.inp-int-manual').checked,
                     permitirEstouro: row.querySelector('.inp-estouro-fase').checked, beep: row.querySelector('.inp-beep-fase').checked,
-                    aviso: parseInt(row.querySelector('.inp-aviso').value), bg: r.querySelector('.inp-bg').value, txt: r.querySelector('.inp-txt').value, img: url,
+                    aviso: parseInt(row.querySelector('.inp-aviso').value), bg: row.querySelector('.inp-bg').value, txt: row.querySelector('.inp-txt').value, img: url,
                     customAudios: customAudios
                 });
             });
@@ -551,13 +547,12 @@
         }
 
         function rodarFase(idx) {
-            // Check Bridge Logic: If active audio has continueNext, let it live.
             if(activeAudio) {
                 const flags = activeAudio.el.customFlags;
                 if(flags && flags.continueNext) { 
-                    // Do nothing, let it play bridge
+                    // Do nothing
                 } else if(flags && flags.playThrough && !flags.stopAtZero) {
-                    // Do nothing, let it play through phase change (will be killed by next audio start)
+                    // Do nothing
                 } else {
                     fadeAndStop(activeAudio, 2);
                 }
