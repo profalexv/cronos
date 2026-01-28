@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.62</title>
+    <title>cronos@alexandre.pro.br v1.63</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -124,6 +124,7 @@
         
         #custom-tooltip { position: fixed; background: rgba(0, 0, 0, 0.95); border: 1px solid #00d2ff; color: #fff; padding: 10px 15px; border-radius: 6px; font-size: 0.9rem; pointer-events: none; z-index: 9999; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.8); max-width: 250px; line-height: 1.4; }
 
+        /* Animações */
         .piscando-cor { animation: pulse-opacity 1s infinite; }
         @keyframes pulse-opacity { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.02); } }
         .piscando-vermelho { color: #ff4444 !important; animation: pulse-red 1s infinite; }
@@ -254,21 +255,21 @@
         </div>
     </div>
 
-    <div id="modal-surplus-check" class="modal-base">
+    <div id="modal-early-start" class="modal-base">
         <div class="modal-box" style="border-color:#00d2ff;">
-            <h2 style="color:#00d2ff; margin-top:0;">⏳ Tempo de Sobra Detectado</h2>
-            <p>Existe uma folga de <b><span id="surplus-display-val"></span> minutos</b> até o final do evento.</p>
+            <h2 style="color:#00d2ff; margin-top:0;">⏳ Tempo de Sobra</h2>
+            <p>Existe uma folga de <b><span id="early-time">00:00</span></b> (aprox. <span id="surplus-display-val"></span> min).</p>
             <div class="modal-opts">
-                <button class="btn-modal" style="background:#444;" onclick="handleSurplusDecision('wait')"><b>⏳ INSERIR AGUARDE</b> (Pausar Agora)</button>
-                <button class="btn-modal" style="background:#28a745; color:white;" onclick="handleSurplusDecision('distribute')"><b>🎁 DISTRIBUIR NAS FASES</b></button>
-                <button class="btn-modal" style="background:#007bff; color:white;" onclick="handleSurplusDecision('start')"><b>▶ INICIAR DIRETO</b> (Terminar Cedo)</button>
+                <button class="btn-modal" style="background:#444;" onclick="handleEarlyStart('wait')"><b>⏳ INSERIR AGUARDE</b> (Pausar Agora)</button>
+                <button class="btn-modal" style="background:#28a745; color:white;" onclick="handleEarlyStart('start')"><b>🎁 DISTRIBUIR / GERENCIAR</b></button>
+                <button class="btn-modal" style="background:#007bff; color:white;" onclick="handleEarlyStart('ignore')"><b>▶ INICIAR DIRETO</b> (Terminar Cedo)</button>
             </div>
         </div>
     </div>
 
     <div id="modal-surplus-dist" class="modal-base">
         <div class="modal-box" style="border-color:#28a745;">
-            <h2 style="color:#28a745; margin-top:0;">🎁 Distribuir Tempo Extra</h2>
+            <h2 style="color:#28a745; margin-top:0;">🎁 Gerenciar Tempo Extra</h2>
             <div class="modal-opts">
                 <button class="btn-modal dist-option" onclick="handleSurplusDistribution('all')"><b>1. Distribuir Geral</b> <span>(Todas Prop.)</span></button>
                 <button class="btn-modal dist-option" onclick="handleSurplusDistribution('first')"><b>2. + 1ª Fase</b> <span id="lbl-first-phase" style="font-size:0.8em; color:#aaa;">(...)</span></button>
@@ -292,8 +293,9 @@
     </div>
 
     <script>
-        // --- FUNÇÕES GLOBAIS E UTILITÁRIOS ---
-        
+        document.getElementById('global-cor-titulo').addEventListener('input', e => document.getElementById('global-titulo').style.color = e.target.value);
+
+        // --- SISTEMA DE UI: IGNORAR/ATIVAR ---
         function toggleIgnorarInicio() {
             const chk = document.getElementById('chk-ignorar-inicio');
             document.getElementById('hora-inicio').disabled = chk.checked;
@@ -305,14 +307,7 @@
             document.querySelectorAll('#group-fim button').forEach(b => b.disabled = chk.checked);
         }
 
-        function toggleIntervalosGlobais(){ const c = document.getElementById('chk-intervalos').checked; document.querySelectorAll('.fase-row').forEach(row => uiAtualizarFase(row)); }
-        function toggleEstouroGlobal(){ const c = document.getElementById('chk-estouro-global').checked; document.querySelectorAll('.col-estouro').forEach(e => c ? e.classList.remove('hidden') : e.classList.add('hidden')); }
-        function toggleAudioGlobal(){
-            const c = document.getElementById('chk-audio-global').checked;
-            document.querySelectorAll('.col-audio').forEach(e => c ? e.classList.remove('hidden') : e.classList.add('hidden'));
-            document.querySelectorAll('.btn-show-audio').forEach(btn => c ? btn.classList.remove('hidden') : btn.classList.add('hidden'));
-        }
-
+        // --- CALCULADORAS ---
         function obterDuracaoTotalMinutos() {
             let totalMin = 0;
             const rows = document.querySelectorAll('.fase-row');
@@ -395,181 +390,78 @@
             }
         }
 
-        // --- MANIPULAÇÃO DE DOM ---
-        function adicionarFase(tit="", min=10, red=true, bg="#000000", txt="#ffffff") {
-            const c = document.getElementById('lista-fases');
-            const hideInt = document.getElementById('chk-intervalos').checked ? '' : 'hidden';
-            const hideEst = document.getElementById('chk-estouro-global').checked ? '' : 'hidden';
-            const hideAud = document.getElementById('chk-audio-global').checked ? '' : 'hidden';
-            const wrapper = document.createElement('div'); wrapper.className = 'fase-wrapper';
-            const div = document.createElement('div'); div.className = 'fase-row';
-            div.innerHTML = `
-                <button class="btn-x" onclick="this.closest('.fase-wrapper').remove()">X</button>
-                <div class="campo" style="flex:2; min-width:150px;"><label>Título</label><input type="text" class="inp-titulo" value="${tit}"></div>
-                <div class="campo" style="width:70px;"><label>Min</label><input type="number" class="inp-tempo" value="${min}" min="1"></div>
-                <div class="campo" style="align-items:center;"><label>Redut?</label><input type="checkbox" class="inp-redutivel" ${red?'checked':''} style="width:20px; height:20px;"></div>
-                <div class="col-estouro ${hideEst}"><div class="campo" style="align-items:center;"><label>Estouro?</label><input type="checkbox" class="inp-estouro-fase" style="width:20px; height:20px;" onchange="uiAtualizarFase(this.closest('.fase-row'))"></div></div>
-                <div class="col-audio ${hideAud}"><div class="campo" style="align-items:center;"><label>Beep?</label><input type="checkbox" class="inp-beep-fase" checked style="width:20px; height:20px;"></div></div>
-                <div class="col-intervalo ${hideInt}"><div class="campo" style="width:60px;"><label>Pausa</label><input type="number" class="inp-int-tempo" value="30"></div><div class="campo" style="align-items:center;"><label>Clique?</label><input type="checkbox" class="inp-int-manual" style="width:20px; height:20px;" onchange="uiAtualizarFase(this.closest('.fase-row'))"></div></div>
-                <div class="campo" style="width:60px;"><label>Aviso</label><input type="number" class="inp-aviso" value="30"></div>
-                <div class="campo" data-tooltip="Cor Fundo"><label>Bg</label><input type="color" class="inp-bg" value="${bg}"></div>
-                <div class="campo" data-tooltip="Cor Texto"><label>Txt</label><input type="color" class="inp-txt" value="${txt}"></div>
-                <div class="campo" style="flex:1;"><label>Img</label><input type="file" class="inp-img" accept="image/*"></div>
-                <button class="btn-icon btn-show-audio ${hideAud}" onclick="this.closest('.fase-wrapper').querySelector('.audio-panel').classList.toggle('open')">🎵</button>
-            `;
-            const audioPanel = document.createElement('div'); audioPanel.className = 'audio-panel';
-            audioPanel.innerHTML = `<div style="font-size:0.8rem; color:#aaa; margin-bottom:5px;">Configuração de Áudio Avançada</div><div class="audio-list"></div><button class="btn-add" style="padding:5px 10px; font-size:0.8rem;" onclick="adicionarSlotAudio(this.parentElement)">+ Novo Áudio</button>`;
-            wrapper.appendChild(div); wrapper.appendChild(audioPanel); c.appendChild(wrapper); uiAtualizarFase(div);
-            return wrapper;
-        }
-
-        function adicionarSlotAudio(panel, min=0, sec=0, dur=0, loop=false, fin=5, fout=5, fname="", playThrough=false, stopZero=false, continueNext=false) {
-            const list = panel.querySelector('.audio-list');
-            const div = document.createElement('div'); div.className = 'audio-slot';
-            const aviso = fname ? `<span class="aud-warn">⚠️ Re-selecione: ${fname}</span>` : '';
-            div.innerHTML = `
-                <div class="grp"><label>Disparo</label><div><input type="number" class="aud-min" value="${min}" placeholder="Min" oninput="recalcularOpcoesAudio(this.closest('.fase-wrapper'))">:<input type="number" class="aud-sec" value="${sec}" placeholder="Seg" oninput="recalcularOpcoesAudio(this.closest('.fase-wrapper'))"></div></div>
-                <div class="grp"><label>Arquivo</label><input type="file" class="aud-file" accept="audio/*"></div>
-                <div class="grp"><label>Duração(s)</label><input type="number" class="aud-dur" value="${dur}" placeholder="0=Tudo"></div>
-                <div class="grp"><label>Loop</label><input type="checkbox" class="aud-loop" ${loop?'checked':''} style="width:20px;height:20px;"></div>
-                <div class="grp"><label>Fade In/Out</label><div><input type="number" class="aud-fin" value="${fin}" style="width:30px">/<input type="number" class="aud-fout" value="${fout}" style="width:30px"></div></div>
-                <div class="grp grp-playthrough"><label data-tooltip="Tocar até o fim (entra no estouro)">Até Fim?</label><input type="checkbox" class="aud-playthrough" ${playThrough?'checked':''} style="width:20px;height:20px;" onchange="ensureExclusive(this)"></div>
-                <div class="grp grp-stopzero"><label data-tooltip="Cortar em 00:00">Parar 0s?</label><input type="checkbox" class="aud-stopzero" ${stopZero?'checked':''} style="width:20px;height:20px;" onchange="ensureExclusive(this)"></div>
-                <div class="grp grp-continue"><label data-tooltip="Continuar na próxima fase (fundo)">Cont. Próx?</label><input type="checkbox" class="aud-continue" ${continueNext?'checked':''} style="width:20px;height:20px;" onchange="ensureExclusive(this)"></div>
-                <button class="btn-x" style="width:20px; height:20px;" onclick="let w=this.closest('.fase-wrapper'); this.parentElement.remove(); recalcularOpcoesAudio(w);">X</button>
-                ${aviso}
-            `;
-            list.appendChild(div);
-            recalcularOpcoesAudio(panel.parentElement);
-        }
-
-        function ensureExclusive(checkbox) {
-            if(!checkbox.checked) return;
-            const slot = checkbox.closest('.audio-slot');
-            const chkPlay = slot.querySelector('.aud-playthrough');
-            const chkStop = slot.querySelector('.aud-stopzero');
-            const chkCont = slot.querySelector('.aud-continue');
-            if(checkbox === chkPlay) { chkStop.checked = false; chkCont.checked = false; }
-            if(checkbox === chkStop) { chkPlay.checked = false; chkCont.checked = false; }
-            if(checkbox === chkCont) { chkPlay.checked = false; chkStop.checked = false; }
-        }
-
-        function recalcularOpcoesAudio(wrapper) {
-            if(!wrapper) return;
-            const slots = Array.from(wrapper.querySelectorAll('.audio-slot'));
-            if(slots.length === 0) return;
-            let minTime = Infinity; let lastSlot = null;
-            slots.forEach(slot => {
-                const m = parseInt(slot.querySelector('.aud-min').value) || 0;
-                const s = parseInt(slot.querySelector('.aud-sec').value) || 0;
-                const totalSec = (m * 60) + s;
-                if(totalSec < minTime) { minTime = totalSec; lastSlot = slot; }
-            });
-            slots.forEach(slot => {
-                const grpPlay = slot.querySelector('.grp-playthrough');
-                const chkPlay = slot.querySelector('.aud-playthrough');
-                const grpCont = slot.querySelector('.grp-continue');
-                const chkCont = slot.querySelector('.aud-continue');
-                const grpStop = slot.querySelector('.grp-stopzero');
-                const chkStop = slot.querySelector('.aud-stopzero');
-                if(slot === lastSlot) {
-                    chkPlay.disabled = false; grpPlay.classList.remove('disabled');
-                    chkCont.disabled = false; grpCont.classList.remove('disabled');
-                    const m = parseInt(slot.querySelector('.aud-min').value) || 0;
-                    const s = parseInt(slot.querySelector('.aud-sec').value) || 0;
-                    if(m===0 && s===0) { chkStop.checked = false; chkStop.disabled = true; grpStop.classList.add('disabled'); }
-                    else { chkStop.disabled = false; grpStop.classList.remove('disabled'); }
-                } else {
-                    chkPlay.checked = false; chkPlay.disabled = true; grpPlay.classList.add('disabled');
-                    chkCont.checked = false; chkCont.disabled = true; grpCont.classList.add('disabled');
-                    chkStop.checked = false; chkStop.disabled = true; grpStop.classList.add('disabled');
-                }
-            });
-        }
-
-        function uiAtualizarFase(row) {
-            const chkEstouro = row.querySelector('.inp-estouro-fase');
-            const colIntervalo = row.querySelector('.col-intervalo');
-            const chkManual = row.querySelector('.inp-int-manual');
-            const boxTempoInt = row.querySelector('.inp-int-tempo').parentElement;
-            const globalIntervalos = document.getElementById('chk-intervalos').checked;
-            if (chkEstouro.checked) colIntervalo.classList.add('hidden');
-            else { if (globalIntervalos) colIntervalo.classList.remove('hidden'); else colIntervalo.classList.add('hidden'); }
-            if (chkManual.checked) boxTempoInt.classList.add('hidden'); else boxTempoInt.classList.remove('hidden');
-        }
-
-        // --- GLOBAIS ---
-        let cronograma=[], indexAtual=0, tempoRestante=0, estado="PARADO", intervaloTimer=null, dataFimGlobal=null, emIntervalo=false;
-        let activeAudio = null; 
-        let audioResumeAction = null;
+        // --- GLOBAIS DE SOBRA DE TEMPO ---
         let surplusMinutes = 0;
         let pendingDataInicio = null;
 
         function iniciarApresentacao() {
-            try {
-                const hI = document.getElementById('hora-inicio').value;
-                const hF = document.getElementById('hora-fim').value;
-                const ignorarI = document.getElementById('chk-ignorar-inicio').checked;
-                const ignorarF = document.getElementById('chk-ignorar-fim').checked;
+            const hI = document.getElementById('hora-inicio').value;
+            const hF = document.getElementById('hora-fim').value;
+            const ignorarI = document.getElementById('chk-ignorar-inicio').checked;
+            const ignorarF = document.getElementById('chk-ignorar-fim').checked;
 
-                if(!ignorarI && !hI) return alert("Defina o Início.");
-                if(!ignorarF && !hF) return alert("Defina o Fim.");
+            if(!ignorarI && !hI) return alert("Defina o Início.");
+            if(!ignorarF && !hF) return alert("Defina o Fim.");
 
-                const now = new Date(); 
-                let dIni;
+            const now = new Date(); 
+            let dIni;
 
-                if(ignorarI) dIni = now; 
-                else dIni = montarData(hI, now);
+            if(ignorarI) dIni = now; 
+            else dIni = montarData(hI, now);
 
-                if(!ignorarF) {
-                    dataFimGlobal = montarData(hF, now); 
-                    if(dataFimGlobal < dIni) dataFimGlobal.setDate(dataFimGlobal.getDate()+1);
-                } else { dataFimGlobal = null; }
+            if(!ignorarF) {
+                dataFimGlobal = montarData(hF, now); 
+                if(dataFimGlobal < dIni) dataFimGlobal.setDate(dataFimGlobal.getDate()+1);
+            } else { dataFimGlobal = null; }
 
-                // --- NOVA LÓGICA DE DETECÇÃO DE FOLGA (UNIFICADA) ---
-                if(!ignorarF) {
-                    // Calculamos a duração TOTAL do programa
-                    const durationMin = obterDuracaoTotalMinutos();
-                    const availableMin = (dataFimGlobal - now) / 60000;
-                    const folga = Math.floor(availableMin - durationMin);
+            // Lógica Unificada de Sobra de Tempo
+            // Se NÃO ignorar fim, calculamos se sobra tempo
+            if(!ignorarF) {
+                const durationMin = obterDuracaoTotalMinutos();
+                const availableMin = (dataFimGlobal - now) / 60000;
+                const folga = Math.floor(availableMin - durationMin);
 
-                    // Se tiver folga > 1 min E (estamos adiantados OU o programa é curto)
-                    if(folga >= 1) {
-                        surplusMinutes = folga;
-                        // Nome da primeira fase para exibir no menu
-                        const firstRow = document.querySelector('.fase-row .inp-titulo');
-                        document.getElementById('lbl-first-phase').innerText = firstRow ? `(${firstRow.value})` : '';
-                        
-                        document.getElementById('surplus-display-val').innerText = surplusMinutes;
-                        document.getElementById('modal-surplus-check').style.display = 'flex';
-                        return; // PAUSA AQUI
-                    }
+                // Se houver mais de 1 minuto de folga
+                if(folga >= 1) {
+                    surplusMinutes = folga;
+                    const h = Math.floor(folga / 60);
+                    const m = folga % 60;
+                    document.getElementById('early-time').innerText = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+                    document.getElementById('surplus-display-val').innerText = folga;
+                    
+                    const firstRow = document.querySelector('.fase-row .inp-titulo');
+                    document.getElementById('lbl-first-phase').innerText = firstRow ? `(${firstRow.value})` : '';
+
+                    document.getElementById('modal-early-start').style.display = 'flex';
+                    return; // PAUSA
                 }
-
-                // Se não tem folga ou estamos atrasados, segue fluxo normal
-                construirCronograma();
-                rodarSistema(now);
-            } catch(e) {
-                alert("Erro ao Iniciar: " + e.message);
-                console.error(e);
             }
+            
+            // Se chegou aqui, não tem folga ou Fim é livre.
+            // Verifica se está muito adiantado em relação ao INÍCIO (se não ignorado)
+            if(!ignorarI && now < dIni && !document.getElementById('modal-early-start').style.display.includes('flex')) {
+                 iniciarEspera(dIni); return;
+            }
+
+            construirCronograma();
+            rodarSistema(now);
         }
 
-        function handleSurplusDecision(choice) {
-            document.getElementById('modal-surplus-check').style.display = 'none';
+        function handleEarlyStart(choice) {
+            document.getElementById('modal-early-start').style.display = 'none';
             
             if(choice === 'wait') {
-                // Inserir Aguarde: Criamos um target time que é Agora + Folga
+                // Criar espera baseada na folga
                 const now = new Date();
-                const targetWait = new Date(now.getTime() + (surplusMinutes * 60000));
-                iniciarEspera(targetWait);
+                const target = new Date(now.getTime() + (surplusMinutes * 60000));
+                iniciarEspera(target);
             
-            } else if (choice === 'distribute') {
-                // Abre menu de distribuição
+            } else if (choice === 'start') {
+                // Abrir distribuição
                 document.getElementById('modal-surplus-dist').style.display = 'flex';
             
             } else {
-                // Iniciar Direto (ignora folga, termina cedo)
+                // Ignore (iniciar direto)
                 construirCronograma();
                 rodarSistema(new Date());
             }
@@ -605,7 +497,6 @@
                     });
                 } else { alert("Nenhuma fase flexível encontrada. Iniciando normal."); }
             }
-            
             construirCronograma();
             rodarSistema(new Date());
         }
@@ -675,11 +566,233 @@
             indexAtual=0; rodarFase(0);
         }
 
-        // --- SISTEMA DE SISTEMA ---
+        // --- CORE (Mantido) ---
+        function iniciarEspera(target) {
+            estado = "WAITING";
+            document.getElementById('display-screen').style.display='flex';
+            document.getElementById('config-screen').style.display='none';
+            document.getElementById('titulo-fase').innerText = "AGUARDANDO INÍCIO";
+            document.getElementById('titulo-fase').style.color = "#00d2ff";
+            document.getElementById('timer-principal').style.color = "#ffffff";
+            document.getElementById('timer-principal').classList.add('timer-waiting');
+            document.getElementById('display-screen').style.backgroundImage = 'none';
+            document.getElementById('display-screen').style.backgroundColor = '#111';
+            
+            intervaloTimer = setInterval(() => {
+                const now = new Date(); const diff = (target - now) / 1000;
+                if (diff <= 0) { 
+                    clearInterval(intervaloTimer); 
+                    document.getElementById('timer-principal').classList.remove('timer-waiting');
+                    tocarBip(); construirCronograma(); rodarSistema(new Date());
+                } 
+                else { const m = Math.floor(diff / 60); const s = Math.floor(diff % 60); document.getElementById('timer-principal').innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
+            }, 1000);
+        }
+
+        function playSmartAudio(config) {
+            if(activeAudio) fadeAndStop(activeAudio, config.fadeIn);
+            const audio = new Audio(config.src); audio.loop = config.loop; audio.volume = 0; 
+            audio.play().catch(e => console.log(e));
+            
+            audio.customFlags = { 
+                playThrough: config.playThrough, 
+                stopAtZero: config.stopAtZero,
+                continueNext: config.continueNext,
+                srcConfig: config 
+            };
+
+            let vol = 0; const fadeInTime = config.fadeIn * 1000; const stepTime = 50; const stepVol = 1 / (fadeInTime / stepTime);
+            const fadeInInterval = setInterval(() => { if(audio.volume < 1 - stepVol) audio.volume += stepVol; else { audio.volume = 1; clearInterval(fadeInInterval); } }, stepTime);
+            
+            if(config.duration > 0) {
+                const playTime = config.duration * 1000; const fadeOutTime = config.fadeOut * 1000;
+                setTimeout(() => { fadeAndStop({ el: audio }, config.fadeOut); }, playTime - fadeOutTime);
+            }
+            activeAudio = { el: audio };
+        }
+
+        function fadeAndStop(audioObj, durationSec) {
+            if(!audioObj || !audioObj.el) return;
+            const audio = audioObj.el; const fadeTime = (durationSec || 2) * 1000; const stepTime = 50; const startVol = audio.volume; const stepVol = startVol / (fadeTime / stepTime);
+            const fadeOutInterval = setInterval(() => { if(audio.volume > stepVol) audio.volume -= stepVol; else { audio.volume = 0; audio.pause(); clearInterval(fadeOutInterval); if(activeAudio === audioObj) activeAudio = null; } }, stepTime);
+        }
+
+        function rodarFase(idx) {
+            if(activeAudio) {
+                const flags = activeAudio.el.customFlags;
+                if(flags && flags.continueNext) { } else if(flags && flags.playThrough && !flags.stopAtZero) { } else { fadeAndStop(activeAudio, 2); }
+            }
+
+            indexAtual=idx; const fase=cronograma[idx]; tempoRestante=fase.segundosFinais; emIntervalo=false; estado="RODANDO";
+            aplicarVisual(fase); atualizarBotoes(true);
+            const btnAv = document.getElementById('btn-avancar');
+            if(indexAtual >= cronograma.length - 1) btnAv.classList.add('hidden'); else btnAv.classList.remove('hidden');
+            document.getElementById('lbl-fim').classList.remove('ativo', 'anim-slow', 'anim-med', 'anim-fast', 'anim-panic');
+            document.getElementById('timer-principal').classList.remove('timer-waiting');
+            if(intervaloTimer) clearInterval(intervaloTimer); intervaloTimer=setInterval(tick,1000); tick();
+        }
+
+        function atualizarPrevisaoEntrega() {
+            if(!dataFimGlobal) return; 
+            let segundosTotais = 0;
+            const globalInt = document.getElementById('chk-intervalos').checked;
+            if(tempoRestante > 0) segundosTotais += tempoRestante;
+            for(let i = indexAtual + 1; i < cronograma.length; i++) {
+                segundosTotais += cronograma[i].segundosFinais;
+                if(globalInt && cronograma[i-1]) { segundosTotais += cronograma[i-1].intSegundos; }
+            }
+            const now = new Date();
+            const previsao = new Date(now.getTime() + (segundosTotais * 1000));
+            const h = String(previsao.getHours()).padStart(2,'0');
+            const m = String(previsao.getMinutes()).padStart(2,'0');
+            const elPrev = document.getElementById('lbl-fim-previsto');
+            elPrev.innerText = `${h}:${m}`;
+            if(previsao > dataFimGlobal) elPrev.style.color = "#ff4444"; else elPrev.style.color = "#28a745";
+        }
+
+        function tick() {
+            if(estado!=="RODANDO" && estado!=="INTERVALO") return;
+            atualizarPrevisaoEntrega();
+            if(estado === "RODANDO" && !emIntervalo && document.getElementById('chk-audio-global').checked) {
+                const fase = cronograma[indexAtual];
+                if(fase.customAudios) { fase.customAudios.forEach(aud => { if(aud.trigger === tempoRestante) playSmartAudio(aud); }); }
+            }
+            if(tempoRestante === 0 && activeAudio && activeAudio.el.customFlags && activeAudio.el.customFlags.stopAtZero) { fadeAndStop(activeAudio, 2); }
+            tempoRestante--;
+            const abs = Math.abs(tempoRestante); const m = Math.floor(abs/60); const s = abs%60; const sinal = tempoRestante < 0 ? "-" : "";
+            const el = document.getElementById('timer-principal'); el.innerText = `${sinal}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            const bg = document.getElementById('display-screen'); document.getElementById('btn-pausar').innerText = tempoRestante < 0 ? "⏸ PARAR" : "⏸ PAUSAR";
+            el.classList.remove('piscando-cor', 'piscando-vermelho', 'piscando-alerta-maximo'); bg.classList.remove('bg-panic');
+            if(!emIntervalo){
+                if (tempoRestante > 0 && tempoRestante <= cronograma[indexAtual].aviso) el.classList.add('piscando-cor');
+                else if (tempoRestante <= 0) {
+                    if (tempoRestante > -180) el.classList.add('piscando-vermelho'); else el.classList.add('piscando-alerta-maximo');
+                    if (tempoRestante <= -30) bg.classList.add('bg-panic');
+                }
+            }
+            if(tempoRestante < 0) {
+                if(indexAtual === cronograma.length - 1 || cronograma[indexAtual].permitirEstouro) {
+                    if(intervaloTimer) clearInterval(intervaloTimer); if(tempoRestante===-1) tocarBip();
+                    if(indexAtual === cronograma.length-1) gerenciarFimNaUltima(tempoRestante);
+                    intervaloTimer = setInterval(tickNegativo, 1000);
+                } else { clearInterval(intervaloTimer); tocarBip(); if(emIntervalo) rodarFase(indexAtual+1); else gerenciarIntervalo(); }
+            }
+        }
+
+        function tickNegativo() {
+            if(estado!=="RODANDO") return;
+            atualizarPrevisaoEntrega();
+            if(tempoRestante === 0 && document.getElementById('chk-audio-global').checked && !emIntervalo) {
+                 const fase = cronograma[indexAtual];
+                 if(fase.customAudios) { fase.customAudios.forEach(aud => { if(aud.trigger === 0) playSmartAudio(aud); }); }
+            }
+            tempoRestante--;
+            const abs = Math.abs(tempoRestante); const m = Math.floor(abs/60); const s = abs%60;
+            const el = document.getElementById('timer-principal'); el.innerText = `-${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            const bg = document.getElementById('display-screen');
+            el.classList.remove('piscando-cor', 'piscando-vermelho', 'piscando-alerta-maximo'); bg.classList.remove('bg-panic');
+            if (tempoRestante > -180) el.classList.add('piscando-vermelho'); else el.classList.add('piscando-alerta-maximo');
+            if (tempoRestante <= -30) bg.classList.add('bg-panic');
+            if (Math.abs(tempoRestante) % 30 === 0) tocarBip();
+            if(indexAtual === cronograma.length - 1) gerenciarFimNaUltima(tempoRestante);
+        }
+
+        function gerenciarFimNaUltima(tempo) {
+            const elFim = document.getElementById('lbl-fim'); elFim.style.setProperty('--txt-color', cronograma[indexAtual].txt);
+            if (tempo > -120) { elFim.classList.remove('ativo'); return; }
+            elFim.classList.add('ativo');
+            let novaClasse = 'anim-slow';
+            if (tempo <= -300) novaClasse = 'anim-panic'; else if (tempo <= -240) novaClasse = 'anim-fast'; else if (tempo <= -180) novaClasse = 'anim-med';
+            if (!elFim.classList.contains(novaClasse)) { elFim.classList.remove('anim-slow', 'anim-med', 'anim-fast', 'anim-panic'); void elFim.offsetWidth; elFim.classList.add(novaClasse); }
+        }
+
+        function gerenciarIntervalo(){
+            const f=cronograma[indexAtual]; if(document.getElementById('chk-intervalos').checked && indexAtual+1 < cronograma.length){
+                if(f.intManual) entrarIntervaloManual(); else if(f.intSegundos>0) entrarIntervaloTempo(f.intSegundos); else rodarFase(indexAtual+1);
+            } else rodarFase(indexAtual+1);
+        }
+
+        function entrarIntervaloTempo(s){ emIntervalo=true; estado="INTERVALO"; tempoRestante=s; configurarVisualIntervalo(true); intervaloTimer=setInterval(tick,1000); tick(); }
+        function entrarIntervaloManual(){ emIntervalo=true; estado="PAUSADO"; atualizarBotoes(false); configurarVisualIntervalo(false); document.getElementById('btn-intervalo-manual').classList.remove('hidden'); }
+        function sairIntervaloManual(){ if(calcularAjuste(new Date())){ document.getElementById('btn-intervalo-manual').classList.add('hidden'); document.getElementById('timer-principal').classList.remove('hidden'); rodarFase(indexAtual+1); }}
+        function configurarVisualIntervalo(isTempo){
+            const d=document.getElementById('display-screen'); d.style.backgroundImage='none'; d.style.backgroundColor='#222';
+            const t=document.getElementById('titulo-fase'); t.innerText="INTERVALO"; t.style.color="#ffaa00";
+            const tm=document.getElementById('timer-principal'); tm.style.color="#ffaa00"; tm.classList.remove('piscando-cor', 'piscando-vermelho', 'piscando-alerta-maximo');
+            if(!isTempo) tm.classList.add('hidden');
+        }
+        function atualizarBotoes(rodando) { if(rodando) { document.getElementById('btn-pausar').classList.remove('hidden'); document.getElementById('btn-continuar').classList.add('hidden'); } else { document.getElementById('btn-pausar').classList.add('hidden'); document.getElementById('btn-continuar').classList.remove('hidden'); } }
+        function acaoAdicionarTempo() {
+            tempoRestante += 60; cronograma[indexAtual].segundosFinais += 60;
+            atualizarPrevisaoEntrega(); 
+            const el = document.getElementById('timer-principal'); const abs = Math.abs(tempoRestante); const m = Math.floor(abs / 60); const s = abs % 60; const sinal = tempoRestante < 0 ? "-" : ""; el.innerText = `${sinal}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            if (calcularAjuste(new Date())) { if(tempoRestante > 0) { document.getElementById('lbl-fim').classList.remove('ativo'); document.getElementById('display-screen').classList.remove('bg-panic'); el.classList.remove('piscando-vermelho', 'piscando-alerta-maximo'); el.style.color = cronograma[indexAtual].txt; if(intervaloTimer) clearInterval(intervaloTimer); intervaloTimer = setInterval(tick, 1000); } }
+        }
+        function acaoPausar(){ 
+            estado="PAUSADO"; clearInterval(intervaloTimer); 
+            if(activeAudio && !activeAudio.el.paused) { document.getElementById('modal-audio-pause').style.display = 'flex'; }
+            document.getElementById('timer-principal').style.opacity="0.5"; document.getElementById('display-screen').classList.remove('bg-panic'); document.getElementById('lbl-fim').style.animationPlayState = 'paused'; atualizarBotoes(false);
+        }
+
+        function resolverAudioPause(action) {
+            audioResumeAction = action; document.getElementById('modal-audio-pause').style.display = 'none';
+            if(!activeAudio) return;
+            if(action === 'pause') { activeAudio.el.pause(); } 
+            else if (action === 'restart') { activeAudio.el.pause(); activeAudio.el.currentTime = 0; } 
+            else if (action === 'stop') { fadeAndStop(activeAudio, 0.5); }
+        }
+
+        function acaoContinuar(){ 
+            if(estado==="PAUSADO"){ 
+                if(document.getElementById('titulo-fase').innerText === "AGUARDANDO INÍCIO") { const hI = document.getElementById('hora-inicio').value; const dIni = montarData(hI, new Date()); iniciarEspera(dIni); document.getElementById('timer-principal').style.opacity="1"; atualizarBotoes(true); return; }
+                if(!document.getElementById('btn-intervalo-manual').classList.contains('hidden')) return; 
+                if(activeAudio) { if(audioResumeAction === 'pause') activeAudio.el.play(); else if(audioResumeAction === 'restart') activeAudio.el.play(); } audioResumeAction = null;
+                if(tempoRestante < 0 && (cronograma[indexAtual].permitirEstouro || indexAtual === cronograma.length-1)) { estado="RODANDO"; document.getElementById('timer-principal').style.opacity="1"; document.getElementById('lbl-fim').style.animationPlayState = 'running'; atualizarBotoes(true); intervaloTimer=setInterval(tickNegativo,1000); return; }
+                if(!calcularAjuste(new Date())) return; 
+                estado=emIntervalo?"INTERVALO":"RODANDO"; document.getElementById('timer-principal').style.opacity="1"; document.getElementById('lbl-fim').style.animationPlayState = 'running'; atualizarBotoes(true); intervaloTimer=setInterval(tick,1000); 
+            }
+        }
+        function acaoReiniciarFase(){ 
+            if(activeAudio) fadeAndStop(activeAudio, 1);
+            tempoRestante=cronograma[indexAtual].segundosFinais; 
+            document.getElementById('lbl-fim').classList.remove('ativo', 'anim-slow', 'anim-med', 'anim-fast', 'anim-panic'); document.getElementById('display-screen').classList.remove('bg-panic');
+            const el = document.getElementById('timer-principal'); el.classList.remove('piscando-vermelho', 'piscando-cor', 'piscando-alerta-maximo'); el.style.color = cronograma[indexAtual].txt;
+            if(calcularAjuste(new Date())){ const m=Math.floor(tempoRestante/60), s=tempoRestante%60; el.innerText=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; if(estado!=="RODANDO") acaoContinuar(); }
+        }
+        function acaoAvançar(){ 
+            if(estado === "WAITING" || document.getElementById('titulo-fase').innerText === "AGUARDANDO INÍCIO") { document.getElementById('timer-principal').classList.remove('timer-waiting'); clearInterval(intervaloTimer); indexAtual = 0; rodarFase(0); } else { if(indexAtual < cronograma.length - 1) rodarFase(indexAtual + 1); }
+        }
+        function calcularAjuste(now){
+            if(!dataFimGlobal) return true; 
+            if(indexAtual>=cronograma.length-1) return true;
+            const disp=(dataFimGlobal-now)/1000; if(disp<=0){ abrirModal(); return false; }
+            let nec=tempoRestante; for(let i=indexAtual+1; i<cronograma.length; i++) nec+=cronograma[i].segundosFinais; if(nec<=disp+5) return true;
+            let pool=0, idxs=[]; if(cronograma[indexAtual].redutivel && (estado==="RODANDO"||estado==="PAUSADO")){ pool+=tempoRestante; idxs.push(indexAtual); }
+            for(let i=indexAtual+1; i<cronograma.length; i++){ if(cronograma[i].redutivel){ pool+=cronograma[i].minutosOrig*60; idxs.push(i); }}
+            let fixo=nec-pool, sobra=disp-fixo; if(sobra<=0 || idxs.length===0){ abrirModal(); return false; }
+            const fator=sobra/pool;
+            idxs.forEach(i=>{ if(i===indexAtual) tempoRestante=Math.floor(tempoRestante*fator); else cronograma[i].segundosFinais=Math.floor(cronograma[i].minutosOrig*60*fator); });
+            notificarAjuste(`⚠️ Ajuste (-${((1-fator)*100).toFixed(0)}%)`); return true;
+        }
+        function abrirModal(){ document.getElementById('modal-decisao').style.display='flex'; }
+        function resolverConflito(opt){
+            document.getElementById('modal-decisao').style.display='none';
+            if(opt===1){ for(let i=indexAtual; i<cronograma.length; i++) cronograma[i].redutivel=true; if(calcularAjuste(new Date())) acaoContinuar(); }
+            if(opt===2){ for(let i=indexAtual; i<cronograma.length-1; i++) cronograma[i].redutivel=false; cronograma[cronograma.length-1].redutivel=true; if(calcularAjuste(new Date())) acaoContinuar(); }
+            if(opt===3){ notificarAjuste("⚠️ Prazo Ignorado"); dataFimGlobal = null; if(!document.getElementById('btn-intervalo-manual').classList.contains('hidden')) sairIntervaloManual(); else acaoContinuar(); }
+            if(opt===4){ const n=prompt("Novo horário (HH:MM):", document.getElementById('hora-fim').value); if(n){ dataFimGlobal=montarData(n,new Date()); if(dataFimGlobal<new Date()) dataFimGlobal.setDate(dataFimGlobal.getDate()+1); if(calcularAjuste(new Date())) acaoContinuar(); } else abrirModal(); }
+        }
+        function aplicarVisual(f){
+            const el=document.getElementById('display-screen'); el.style.backgroundColor=f.bg; el.style.backgroundImage=f.img?`url('${f.img}')`:'none'; el.classList.remove('bg-panic');
+            document.getElementById('btn-intervalo-manual').classList.add('hidden'); document.getElementById('timer-principal').classList.remove('hidden');
+            document.getElementById('titulo-fase').innerText=f.titulo; document.getElementById('titulo-fase').style.color=f.txt;
+            const tm = document.getElementById('timer-principal'); tm.style.color=f.txt; tm.style.setProperty('--txt-color', f.txt); 
+            document.getElementById('txt-status').style.color=f.txt; const p=document.getElementById('txt-proximo'); p.style.color=f.txt; p.innerText=`Próximo: ${(indexAtual+1<cronograma.length)?cronograma[indexAtual+1].titulo:"Fim"}`;
+        }
         function montarData(s,ref){ const [h,m]=s.split(':'); const d=new Date(ref); d.setHours(parseInt(h),parseInt(m),0,0); return d; }
         function notificarAjuste(m){ const el=document.getElementById('txt-status'); el.innerText=m; el.style.color="#ffaa00"; }
         function tocarBip(){ 
-            const globalAudio = document.getElementById('chk-audio-global').checked; const faseBeep = cronograma[indexAtual] ? cronograma[indexAtual].beep : false; if(!globalAudio || !faseBeep) return;
+            const globalAudio = document.getElementById('chk-audio-global').checked; const faseBeep = cronograma[indexAtual].beep; if(!globalAudio || !faseBeep) return;
             try{ const c=new(window.AudioContext||window.webkitAudioContext)(); const o=c.createOscillator(); o.type='sine'; o.frequency.value=880; o.connect(c.destination); o.start(); o.stop(c.currentTime+0.5); }catch(e){} 
         }
         function encerrar(){ 
@@ -696,6 +809,7 @@
             try {
                 document.getElementById('global-cor-titulo').addEventListener('input', e => document.getElementById('global-titulo').style.color = e.target.value);
                 
+                // Configuração Inicial de Data
                 const now = new Date(); 
                 const stdStart = new Date(now); stdStart.setHours(9,20,0,0);
                 let sVal="09:20", eVal="10:15";
@@ -705,10 +819,12 @@
                 }
                 document.getElementById('hora-inicio').value = sVal; document.getElementById('hora-fim').value = eVal;
                 
+                // Adicionar Fases Iniciais Padrão
                 adicionarFase("Confraternização", 10, true, "#ffcc00", "#ffffff");
                 adicionarFase("Missão", 15, true, "#28a745", "#ffffff");
                 adicionarFase("Estudo da Bíblia e Oração", 30, false, "#007bff", "#ffffff");
                 
+                // Relógio Real
                 setInterval(()=>{ document.getElementById('relogio-real').innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); },1000);
 
             } catch (err) {
