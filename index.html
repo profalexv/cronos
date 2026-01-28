@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.65</title>
+    <title>cronos@alexandre.pro.br v1.66</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -124,6 +124,7 @@
         
         #custom-tooltip { position: fixed; background: rgba(0, 0, 0, 0.95); border: 1px solid #00d2ff; color: #fff; padding: 10px 15px; border-radius: 6px; font-size: 0.9rem; pointer-events: none; z-index: 9999; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.8); max-width: 250px; line-height: 1.4; }
 
+        /* Animações */
         .piscando-cor { animation: pulse-opacity 1s infinite; }
         @keyframes pulse-opacity { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.02); } }
         .piscando-vermelho { color: #ff4444 !important; animation: pulse-red 1s infinite; }
@@ -303,7 +304,14 @@
     </div>
 
     <script>
-        // --- FUNÇÕES GLOBAIS ---
+        // Variáveis Globais
+        let cronograma=[], indexAtual=0, tempoRestante=0, estado="PARADO", intervaloTimer=null, dataFimGlobal=null, emIntervalo=false;
+        let activeAudio = null; 
+        let audioResumeAction = null;
+        let surplusMinutes = 0;
+        let pendingDataInicio = null;
+
+        // --- SISTEMA DE UI ---
         function toggleIgnorarInicio() {
             const chk = document.getElementById('chk-ignorar-inicio');
             document.getElementById('hora-inicio').disabled = chk.checked;
@@ -321,6 +329,89 @@
             const c = document.getElementById('chk-audio-global').checked;
             document.querySelectorAll('.col-audio').forEach(e => c ? e.classList.remove('hidden') : e.classList.add('hidden'));
             document.querySelectorAll('.btn-show-audio').forEach(btn => c ? btn.classList.remove('hidden') : btn.classList.add('hidden'));
+        }
+
+        // --- CALCULADORAS ---
+        function obterDuracaoTotalMinutos() {
+            let totalMin = 0;
+            const rows = document.querySelectorAll('.fase-row');
+            const globalInt = document.getElementById('chk-intervalos').checked;
+            rows.forEach((r, idx) => {
+                const m = parseFloat(r.querySelector('.inp-tempo').value) || 0;
+                totalMin += m;
+                if(globalInt && idx < rows.length - 1) {
+                    const intS = parseInt(r.querySelector('.inp-int-tempo').value) || 0;
+                    totalMin += (intS / 60);
+                }
+            });
+            return totalMin;
+        }
+
+        function formatTime(date) { return String(date.getHours()).padStart(2,'0') + ":" + String(date.getMinutes()).padStart(2,'0'); }
+        function calcSetInicioAgora() { document.getElementById('hora-inicio').value = formatTime(new Date()); }
+
+        function calcFimPeloInicio() {
+            const hI = document.getElementById('hora-inicio').value;
+            if(!hI) return alert("Defina o início primeiro.");
+            const dur = obterDuracaoTotalMinutos();
+            const d = montarData(hI, new Date());
+            d.setMinutes(d.getMinutes() + Math.ceil(dur));
+            document.getElementById('hora-fim').value = formatTime(d);
+        }
+
+        function calcInicioPeloFim() {
+            const hF = document.getElementById('hora-fim').value;
+            if(!hF) return alert("Defina o fim primeiro.");
+            const dur = obterDuracaoTotalMinutos();
+            const dFim = montarData(hF, new Date());
+            const dIni = new Date(dFim.getTime() - (dur * 60000));
+            
+            const now = new Date();
+            if(dIni < new Date(now.getTime() - 60000)) {
+                document.getElementById('span-hora-calc').innerText = formatTime(dIni);
+                const rows = document.querySelectorAll('.fase-row');
+                let countRedut = 0; rows.forEach(r => { if(r.querySelector('.inp-redutivel').checked) countRedut++; });
+                const btnDist = document.getElementById('btn-distribuir-calc');
+                if(rows.length === 1 || countRedut > 0) btnDist.style.display = 'block'; else btnDist.style.display = 'none';
+                document.getElementById('modal-conflito-calc').style.display = 'flex';
+            } else {
+                document.getElementById('hora-inicio').value = formatTime(dIni);
+            }
+        }
+
+        function resolverConflitoCalc(opt) {
+            document.getElementById('modal-conflito-calc').style.display = 'none';
+            if(opt === 0) return; 
+            if(opt === 2) { calcSetInicioAgora(); calcFimPeloInicio(); return; }
+            if(opt === 1) {
+                const hF = document.getElementById('hora-fim').value;
+                const dFim = montarData(hF, new Date());
+                if(dFim < new Date()) dFim.setDate(dFim.getDate()+1);
+                const now = new Date();
+                const tempoDisponivelMin = (dFim - now) / 60000;
+                let tempoFixo = 0; let tempoRedutivelTotal = 0;
+                const rows = Array.from(document.querySelectorAll('.fase-row'));
+                const globalInt = document.getElementById('chk-intervalos').checked;
+                rows.forEach((r, idx) => {
+                    const m = parseFloat(r.querySelector('.inp-tempo').value) || 0;
+                    const isRedut = rows.length === 1 || r.querySelector('.inp-redutivel').checked;
+                    if(isRedut) tempoRedutivelTotal += m; else tempoFixo += m;
+                    if(globalInt && idx < rows.length - 1) { tempoFixo += (parseInt(r.querySelector('.inp-int-tempo').value) || 0) / 60; }
+                });
+                const tempoParaRedutiveis = tempoDisponivelMin - tempoFixo;
+                if(tempoParaRedutiveis <= 0) { alert("Tempo insuficiente."); return; }
+                const fator = tempoParaRedutiveis / tempoRedutivelTotal;
+                rows.forEach(r => {
+                    const isRedut = rows.length === 1 || r.querySelector('.inp-redutivel').checked;
+                    if(isRedut) {
+                        const original = parseFloat(r.querySelector('.inp-tempo').value);
+                        let novo = Math.floor(original * fator); if(novo < 1) novo = 1;
+                        r.querySelector('.inp-tempo').value = novo;
+                    }
+                });
+                calcSetInicioAgora();
+                alert(`Redução aplicada: ${Math.round((1-fator)*100)}%`);
+            }
         }
 
         // --- SISTEMA DE SALVAR/CARREGAR ---
@@ -451,89 +542,6 @@
             }
         }
 
-        // --- CALCULADORAS E UTILITÁRIOS ---
-        function obterDuracaoTotalMinutos() {
-            let totalMin = 0;
-            const rows = document.querySelectorAll('.fase-row');
-            const globalInt = document.getElementById('chk-intervalos').checked;
-            rows.forEach((r, idx) => {
-                const m = parseFloat(r.querySelector('.inp-tempo').value) || 0;
-                totalMin += m;
-                if(globalInt && idx < rows.length - 1) {
-                    const intS = parseInt(r.querySelector('.inp-int-tempo').value) || 0;
-                    totalMin += (intS / 60);
-                }
-            });
-            return totalMin;
-        }
-
-        function formatTime(date) { return String(date.getHours()).padStart(2,'0') + ":" + String(date.getMinutes()).padStart(2,'0'); }
-        function calcSetInicioAgora() { document.getElementById('hora-inicio').value = formatTime(new Date()); }
-
-        function calcFimPeloInicio() {
-            const hI = document.getElementById('hora-inicio').value;
-            if(!hI) return alert("Defina o início primeiro.");
-            const dur = obterDuracaoTotalMinutos();
-            const d = montarData(hI, new Date());
-            d.setMinutes(d.getMinutes() + Math.ceil(dur));
-            document.getElementById('hora-fim').value = formatTime(d);
-        }
-
-        function calcInicioPeloFim() {
-            const hF = document.getElementById('hora-fim').value;
-            if(!hF) return alert("Defina o fim primeiro.");
-            const dur = obterDuracaoTotalMinutos();
-            const dFim = montarData(hF, new Date());
-            const dIni = new Date(dFim.getTime() - (dur * 60000));
-            
-            const now = new Date();
-            if(dIni < new Date(now.getTime() - 60000)) {
-                document.getElementById('span-hora-calc').innerText = formatTime(dIni);
-                const rows = document.querySelectorAll('.fase-row');
-                let countRedut = 0; rows.forEach(r => { if(r.querySelector('.inp-redutivel').checked) countRedut++; });
-                const btnDist = document.getElementById('btn-distribuir-calc');
-                if(rows.length === 1 || countRedut > 0) btnDist.style.display = 'block'; else btnDist.style.display = 'none';
-                document.getElementById('modal-conflito-calc').style.display = 'flex';
-            } else {
-                document.getElementById('hora-inicio').value = formatTime(dIni);
-            }
-        }
-
-        function resolverConflitoCalc(opt) {
-            document.getElementById('modal-conflito-calc').style.display = 'none';
-            if(opt === 0) return; 
-            if(opt === 2) { calcSetInicioAgora(); calcFimPeloInicio(); return; }
-            if(opt === 1) {
-                const hF = document.getElementById('hora-fim').value;
-                const dFim = montarData(hF, new Date());
-                if(dFim < new Date()) dFim.setDate(dFim.getDate()+1);
-                const now = new Date();
-                const tempoDisponivelMin = (dFim - now) / 60000;
-                let tempoFixo = 0; let tempoRedutivelTotal = 0;
-                const rows = Array.from(document.querySelectorAll('.fase-row'));
-                const globalInt = document.getElementById('chk-intervalos').checked;
-                rows.forEach((r, idx) => {
-                    const m = parseFloat(r.querySelector('.inp-tempo').value) || 0;
-                    const isRedut = rows.length === 1 || r.querySelector('.inp-redutivel').checked;
-                    if(isRedut) tempoRedutivelTotal += m; else tempoFixo += m;
-                    if(globalInt && idx < rows.length - 1) { tempoFixo += (parseInt(r.querySelector('.inp-int-tempo').value) || 0) / 60; }
-                });
-                const tempoParaRedutiveis = tempoDisponivelMin - tempoFixo;
-                if(tempoParaRedutiveis <= 0) { alert("Tempo insuficiente."); return; }
-                const fator = tempoParaRedutiveis / tempoRedutivelTotal;
-                rows.forEach(r => {
-                    const isRedut = rows.length === 1 || r.querySelector('.inp-redutivel').checked;
-                    if(isRedut) {
-                        const original = parseFloat(r.querySelector('.inp-tempo').value);
-                        let novo = Math.floor(original * fator); if(novo < 1) novo = 1;
-                        r.querySelector('.inp-tempo').value = novo;
-                    }
-                });
-                calcSetInicioAgora();
-                alert(`Redução aplicada: ${Math.round((1-fator)*100)}%`);
-            }
-        }
-
         // --- MANIPULAÇÃO DOM ---
         function adicionarFase(tit="", min=10, red=true, bg="#000000", txt="#ffffff") {
             const c = document.getElementById('lista-fases');
@@ -576,10 +584,9 @@
 
         function adicionarSlotAudio(panel, min=0, sec=0, dur=0, loop=false, fin=5, fout=5, fname="", playThrough=false, stopZero=false, continueNext=false) {
             let list = panel;
-            // Se panel não for a lista direta, tenta achar
             if(!panel.classList.contains('audio-list')) {
                 list = panel.querySelector('.audio-list');
-                if(!list) list = panel; // Fallback
+                if(!list) list = panel; 
             }
 
             const div = document.createElement('div'); 
@@ -600,7 +607,6 @@
             `;
             list.appendChild(div);
             
-            // Tenta recalcular se possível
             if(div.closest('.fase-wrapper')) recalcularOpcoesAudio(div.closest('.fase-wrapper'));
         }
 
@@ -649,13 +655,18 @@
             });
         }
 
-        // --- GLOBAIS ---
-        let cronograma=[], indexAtual=0, tempoRestante=0, estado="PARADO", intervaloTimer=null, dataFimGlobal=null, emIntervalo=false;
-        let activeAudio = null; 
-        let audioResumeAction = null;
-        let surplusMinutes = 0;
-        let pendingDataInicio = null;
+        function uiAtualizarFase(row) {
+            const chkEstouro = row.querySelector('.inp-estouro-fase');
+            const colIntervalo = row.querySelector('.col-intervalo');
+            const chkManual = row.querySelector('.inp-int-manual');
+            const boxTempoInt = row.querySelector('.inp-int-tempo').parentElement;
+            const globalIntervalos = document.getElementById('chk-intervalos').checked;
+            if (chkEstouro.checked) colIntervalo.classList.add('hidden');
+            else { if (globalIntervalos) colIntervalo.classList.remove('hidden'); else colIntervalo.classList.add('hidden'); }
+            if (chkManual.checked) boxTempoInt.classList.add('hidden'); else boxTempoInt.classList.remove('hidden');
+        }
 
+        // --- LÓGICA DE INÍCIO E CONTROLE ---
         function iniciarApresentacao() {
             try {
                 const hI = document.getElementById('hora-inicio').value;
@@ -677,16 +688,16 @@
                     if(dataFimGlobal < dIni) dataFimGlobal.setDate(dataFimGlobal.getDate()+1);
                 } else { dataFimGlobal = null; }
 
-                // --- LÓGICA DE SOBRA (FOLGA) ---
+                // --- LÓGICA UNIFICADA DE SOBRA DE TEMPO ---
                 if(!ignorarF) {
-                    // Calcula duração total do programa
+                    // Calcula duração total do programa atual
                     const durationMin = obterDuracaoTotalMinutos();
-                    // Calcula tempo disponível até o final
+                    // Calcula tempo disponível REAL (Até o final)
                     const availableMin = (dataFimGlobal - now) / 60000;
                     
                     const folga = Math.floor(availableMin - durationMin);
 
-                    // Se tem folga, pergunta o que fazer
+                    // Se sobrar mais de 1 minuto, independente do horário de início
                     if(folga >= 1) {
                         surplusMinutes = folga;
                         
@@ -694,14 +705,15 @@
                         const nomeFase = firstRow ? `(${firstRow.value})` : '';
                         
                         document.getElementById('surplus-display-val').innerText = surplusMinutes;
-                        // Ajustar modal dependendo do contexto
+                        
                         document.getElementById('modal-surplus-check').style.display = 'flex';
                         return; // PAUSA AQUI
                     }
                 }
 
-                // Se não tem folga no teto, verifica se está apenas "Adiantado no Relógio"
+                // Se não tem folga no teto, verifica se está apenas "Adiantado no Relógio" (se início não ignorado)
                 if(!ignorarI && now < dIni && !document.getElementById('modal-surplus-check').style.display.includes('flex')) {
+                    // Configura pendência para modal de Early Start
                     pendingDataInicio = dIni;
                     document.getElementById('modal-early-start').style.display = 'flex';
                     return;
@@ -715,25 +727,32 @@
             }
         }
 
+        // Handler para Sobra de Tempo (Folga no Teto)
         function handleSurplusDecision(choice) {
             document.getElementById('modal-surplus-check').style.display = 'none';
             
             if(choice === 'wait') {
-                // Inserir Aguarde: Criar target time
+                // Inserir Aguarde: Cria um target time baseado na folga a partir de AGORA
                 const now = new Date();
                 const targetWait = new Date(now.getTime() + (surplusMinutes * 60000));
+                
+                // Adicionar uma fase temporária de "Buffer" no cronograma visualmente?
+                // Melhor: usar o sistema de espera existente
+                document.getElementById('titulo-fase').innerText = "AGUARDANDO / BUFFER";
                 iniciarEspera(targetWait);
             
             } else if (choice === 'distribute') {
+                // Abre menu de distribuição
                 document.getElementById('modal-surplus-dist').style.display = 'flex';
             
             } else {
-                // Iniciar Direto
+                // Iniciar Direto (ignora folga, termina cedo)
                 construirCronograma();
                 rodarSistema(new Date());
             }
         }
 
+        // Handler para Início Antecipado (Relógio)
         function handleEarlyStart(choice) {
             document.getElementById('modal-early-start').style.display = 'none';
             if(choice === 'wait') {
@@ -833,6 +852,7 @@
             } else {
                 document.getElementById('lbl-fim-absoluto').innerText = hF;
                 document.getElementById('lbl-fim-previsto').parentElement.style.display = 'flex';
+                // Verifica atraso (se não foi resolvido antes)
                 if(dataFimGlobal) {
                     const plan = cronograma.reduce((a,b)=>a+b.minutosOrig,0);
                     const disp = (dataFimGlobal - now)/60000;
@@ -844,17 +864,22 @@
             indexAtual=0; rodarFase(0);
         }
 
+        // --- CORE DO RELÓGIO ---
         function iniciarEspera(target) {
             estado = "WAITING";
             document.getElementById('display-screen').style.display='flex';
             document.getElementById('config-screen').style.display='none';
-            document.getElementById('titulo-fase').innerText = "AGUARDANDO INÍCIO";
+            // Se já não tiver texto definido (ex: Buffer)
+            if(document.getElementById('titulo-fase').innerText === "...") {
+                document.getElementById('titulo-fase').innerText = "AGUARDANDO INÍCIO";
+            }
             document.getElementById('titulo-fase').style.color = "#00d2ff";
             document.getElementById('timer-principal').style.color = "#ffffff";
             document.getElementById('timer-principal').classList.add('timer-waiting');
             document.getElementById('display-screen').style.backgroundImage = 'none';
             document.getElementById('display-screen').style.backgroundColor = '#111';
             
+            if(intervaloTimer) clearInterval(intervaloTimer);
             intervaloTimer = setInterval(() => {
                 const now = new Date(); const diff = (target - now) / 1000;
                 if (diff <= 0) { 
@@ -866,68 +891,45 @@
             }, 1000);
         }
 
-        function montarData(s,ref){ const [h,m]=s.split(':'); const d=new Date(ref); d.setHours(parseInt(h),parseInt(m),0,0); return d; }
-        function notificarAjuste(m){ const el=document.getElementById('txt-status'); el.innerText=m; el.style.color="#ffaa00"; }
-        function tocarBip(){ 
-            const globalAudio = document.getElementById('chk-audio-global').checked; const faseBeep = cronograma[indexAtual] ? cronograma[indexAtual].beep : false; if(!globalAudio || !faseBeep) return;
-            try{ const c=new(window.AudioContext||window.webkitAudioContext)(); const o=c.createOscillator(); o.type='sine'; o.frequency.value=880; o.connect(c.destination); o.start(); o.stop(c.currentTime+0.5); }catch(e){} 
-        }
-        function encerrar(){ 
-            if(intervaloTimer) clearInterval(intervaloTimer); if(activeAudio) fadeAndStop(activeAudio, 1);
-            document.getElementById('display-screen').style.display = 'none'; document.getElementById('config-screen').style.display = 'block'; 
-            const d=document.getElementById('display-screen'); d.style.background="#000"; d.style.backgroundImage='none'; d.classList.remove('bg-panic');
-            document.getElementById('titulo-fase').innerText="..."; document.getElementById('lbl-fim').classList.remove('ativo', 'anim-slow', 'anim-med', 'anim-fast', 'anim-panic');
-            document.getElementById('timer-principal').innerText="00:00"; document.getElementById('timer-principal').classList.remove('piscando-cor', 'piscando-vermelho', 'piscando-alerta-maximo');
-            document.getElementById('btn-intervalo-manual').classList.add('hidden'); document.getElementById('timer-principal').classList.remove('hidden');
-        }
-
         function fadeAndStop(audioObj, durationSec) {
             if(!audioObj || !audioObj.el) return;
             const audio = audioObj.el; const fadeTime = (durationSec || 2) * 1000; const stepTime = 50; const startVol = audio.volume; const stepVol = startVol / (fadeTime / stepTime);
             const fadeOutInterval = setInterval(() => { if(audio.volume > stepVol) audio.volume -= stepVol; else { audio.volume = 0; audio.pause(); clearInterval(fadeOutInterval); if(activeAudio === audioObj) activeAudio = null; } }, stepTime);
         }
 
-        function resolverAudioPause(action) {
-            audioResumeAction = action; document.getElementById('modal-audio-pause').style.display = 'none';
-            if(!activeAudio) return;
-            if(action === 'pause') { activeAudio.el.pause(); } 
-            else if (action === 'restart') { activeAudio.el.pause(); activeAudio.el.currentTime = 0; } 
-            else if (action === 'stop') { fadeAndStop(activeAudio, 0.5); }
-        }
-
-        function acaoPausar(){ 
-            estado="PAUSADO"; clearInterval(intervaloTimer); 
-            if(activeAudio && !activeAudio.el.paused) { document.getElementById('modal-audio-pause').style.display = 'flex'; }
-            document.getElementById('timer-principal').style.opacity="0.5"; document.getElementById('display-screen').classList.remove('bg-panic'); document.getElementById('lbl-fim').style.animationPlayState = 'paused'; atualizarBotoes(false);
-        }
-
-        function acaoContinuar(){ 
-            if(estado==="PAUSADO"){ 
-                if(document.getElementById('titulo-fase').innerText === "AGUARDANDO INÍCIO") { const hI = document.getElementById('hora-inicio').value; const dIni = montarData(hI, new Date()); iniciarEspera(dIni); document.getElementById('timer-principal').style.opacity="1"; atualizarBotoes(true); return; }
-                if(!document.getElementById('btn-intervalo-manual').classList.contains('hidden')) return; 
-                if(activeAudio) { if(audioResumeAction === 'pause') activeAudio.el.play(); else if(audioResumeAction === 'restart') activeAudio.el.play(); } audioResumeAction = null;
-                if(tempoRestante < 0 && (cronograma[indexAtual].permitirEstouro || indexAtual === cronograma.length-1)) { estado="RODANDO"; document.getElementById('timer-principal').style.opacity="1"; document.getElementById('lbl-fim').style.animationPlayState = 'running'; atualizarBotoes(true); intervaloTimer=setInterval(tickNegativo,1000); return; }
-                if(!calcularAjuste(new Date())) return; 
-                estado=emIntervalo?"INTERVALO":"RODANDO"; document.getElementById('timer-principal').style.opacity="1"; document.getElementById('lbl-fim').style.animationPlayState = 'running'; atualizarBotoes(true); intervaloTimer=setInterval(tick,1000); 
+        function rodarFase(idx) {
+            if(activeAudio) {
+                const flags = activeAudio.el.customFlags;
+                if(flags && flags.continueNext) { } else if(flags && flags.playThrough && !flags.stopAtZero) { } else { fadeAndStop(activeAudio, 2); }
             }
+
+            indexAtual=idx; const fase=cronograma[idx]; tempoRestante=fase.segundosFinais; emIntervalo=false; estado="RODANDO";
+            aplicarVisual(fase); atualizarBotoes(true);
+            const btnAv = document.getElementById('btn-avancar');
+            if(indexAtual >= cronograma.length - 1) btnAv.classList.add('hidden'); else btnAv.classList.remove('hidden');
+            document.getElementById('lbl-fim').classList.remove('ativo', 'anim-slow', 'anim-med', 'anim-fast', 'anim-panic');
+            document.getElementById('timer-principal').classList.remove('timer-waiting');
+            if(intervaloTimer) clearInterval(intervaloTimer); intervaloTimer=setInterval(tick,1000); tick();
         }
-        function acaoReiniciarFase(){ 
-            if(activeAudio) fadeAndStop(activeAudio, 1);
-            tempoRestante=cronograma[indexAtual].segundosFinais; 
-            document.getElementById('lbl-fim').classList.remove('ativo', 'anim-slow', 'anim-med', 'anim-fast', 'anim-panic'); document.getElementById('display-screen').classList.remove('bg-panic');
-            const el = document.getElementById('timer-principal'); el.classList.remove('piscando-vermelho', 'piscando-cor', 'piscando-alerta-maximo'); el.style.color = cronograma[indexAtual].txt;
-            if(calcularAjuste(new Date())){ const m=Math.floor(tempoRestante/60), s=tempoRestante%60; el.innerText=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; if(estado!=="RODANDO") acaoContinuar(); }
+
+        function atualizarPrevisaoEntrega() {
+            if(!dataFimGlobal) return; 
+            let segundosTotais = 0;
+            const globalInt = document.getElementById('chk-intervalos').checked;
+            if(tempoRestante > 0) segundosTotais += tempoRestante;
+            for(let i = indexAtual + 1; i < cronograma.length; i++) {
+                segundosTotais += cronograma[i].segundosFinais;
+                if(globalInt && cronograma[i-1]) { segundosTotais += cronograma[i-1].intSegundos; }
+            }
+            const now = new Date();
+            const previsao = new Date(now.getTime() + (segundosTotais * 1000));
+            const h = String(previsao.getHours()).padStart(2,'0');
+            const m = String(previsao.getMinutes()).padStart(2,'0');
+            const elPrev = document.getElementById('lbl-fim-previsto');
+            elPrev.innerText = `${h}:${m}`;
+            if(previsao > dataFimGlobal) elPrev.style.color = "#ff4444"; else elPrev.style.color = "#28a745";
         }
-        function acaoAvançar(){ 
-            if(estado === "WAITING" || document.getElementById('titulo-fase').innerText === "AGUARDANDO INÍCIO") { document.getElementById('timer-principal').classList.remove('timer-waiting'); clearInterval(intervaloTimer); indexAtual = 0; rodarFase(0); } else { if(indexAtual < cronograma.length - 1) rodarFase(indexAtual + 1); }
-        }
-        function acaoAdicionarTempo() {
-            tempoRestante += 60; cronograma[indexAtual].segundosFinais += 60;
-            atualizarPrevisaoEntrega(); 
-            const el = document.getElementById('timer-principal'); const abs = Math.abs(tempoRestante); const m = Math.floor(abs / 60); const s = abs % 60; const sinal = tempoRestante < 0 ? "-" : ""; el.innerText = `${sinal}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-            if (calcularAjuste(new Date())) { if(tempoRestante > 0) { document.getElementById('lbl-fim').classList.remove('ativo'); document.getElementById('display-screen').classList.remove('bg-panic'); el.classList.remove('piscando-vermelho', 'piscando-alerta-maximo'); el.style.color = cronograma[indexAtual].txt; if(intervaloTimer) clearInterval(intervaloTimer); intervaloTimer = setInterval(tick, 1000); } }
-        }
-        function atualizarBotoes(rodando) { if(rodando) { document.getElementById('btn-pausar').classList.remove('hidden'); document.getElementById('btn-continuar').classList.add('hidden'); } else { document.getElementById('btn-pausar').classList.add('hidden'); document.getElementById('btn-continuar').classList.remove('hidden'); } }
+
         function tick() {
             if(estado!=="RODANDO" && estado!=="INTERVALO") return;
             atualizarPrevisaoEntrega();
@@ -956,6 +958,7 @@
                 } else { clearInterval(intervaloTimer); tocarBip(); if(emIntervalo) rodarFase(indexAtual+1); else gerenciarIntervalo(); }
             }
         }
+
         function tickNegativo() {
             if(estado!=="RODANDO") return;
             atualizarPrevisaoEntrega();
@@ -973,6 +976,7 @@
             if (Math.abs(tempoRestante) % 30 === 0) tocarBip();
             if(indexAtual === cronograma.length - 1) gerenciarFimNaUltima(tempoRestante);
         }
+
         function resolverConflito(opt){
             document.getElementById('modal-decisao').style.display='none';
             if(opt===1){ for(let i=indexAtual; i<cronograma.length; i++) cronograma[i].redutivel=true; if(calcularAjuste(new Date())) acaoContinuar(); }
@@ -995,10 +999,12 @@
         function abrirModal(){ document.getElementById('modal-decisao').style.display='flex'; }
         function sairIntervaloManual(){ if(calcularAjuste(new Date())){ document.getElementById('btn-intervalo-manual').classList.add('hidden'); document.getElementById('timer-principal').classList.remove('hidden'); rodarFase(indexAtual+1); }}
 
-        // --- CARREGAMENTO INICIAL ---
+        // --- INICIALIZAÇÃO SEGURA (NO FINAL) ---
         window.onload = function() {
             try {
                 document.getElementById('global-cor-titulo').addEventListener('input', e => document.getElementById('global-titulo').style.color = e.target.value);
+                
+                // Configuração Inicial de Data
                 const now = new Date(); 
                 const stdStart = new Date(now); stdStart.setHours(9,20,0,0);
                 let sVal="09:20", eVal="10:15";
@@ -1008,12 +1014,18 @@
                 }
                 document.getElementById('hora-inicio').value = sVal; document.getElementById('hora-fim').value = eVal;
                 
+                // Adicionar Fases Iniciais Padrão
                 adicionarFase("Confraternização", 10, true, "#ffcc00", "#ffffff");
                 adicionarFase("Missão", 15, true, "#28a745", "#ffffff");
                 adicionarFase("Estudo da Bíblia e Oração", 30, false, "#007bff", "#ffffff");
                 
+                // Relógio Real
                 setInterval(()=>{ document.getElementById('relogio-real').innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); },1000);
-            } catch (err) { alert("Erro Fatal: " + err.message); console.error(err); }
+
+            } catch (err) {
+                alert("Erro Fatal ao carregar o sistema: " + err.message);
+                console.error(err);
+            }
         };
     </script>
 </body>
