@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.314</title>
+    <title>cronos@alexandre.pro.br v1.67</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
@@ -35,7 +35,7 @@
         .btn-file:hover { background: #555; border-color: #888; color: #fff; }
         
         /* Botão Pasta Mídia */
-        .btn-folder { background: #28a745; border: 1px solid #28a745; color: white; }
+        .btn-folder { background: #28a745; border-color: #28a745; color: white; }
         .btn-folder:hover { background: #218838; }
 
         .btn-icon { background: transparent; border: 1px solid #555; color: #aaa; width: 30px; height: 30px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
@@ -66,10 +66,12 @@
         .audio-slot input[type="number"] { width: 50px; padding: 5px; font-size: 0.9rem; background: #333; border: 1px solid #555; }
         
         /* Status de Arquivo */
-        .file-status { font-size: 0.75rem; margin-top: 2px; display: block; font-style: italic; }
-        .status-ok { color: #28a745; }
-        .status-missing { color: #ff4444; font-weight: bold; }
-        .status-manual { color: #ffaa00; }
+        .file-status { 
+            font-size: 0.75rem; margin-top: 4px; display: flex; align-items: center; gap: 5px; 
+            background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 3px;
+        }
+        .status-ok { color: #28a745; border-left: 2px solid #28a745; }
+        .status-missing { color: #ff4444; border-left: 2px solid #ff4444; }
         
         .grp.disabled { opacity: 0.3; pointer-events: none; }
         .grp.vanish { display: none; }
@@ -164,7 +166,7 @@
                 <label class="chk-label" data-tooltip="Se marcado, exibe este título na tela de apresentação."><input type="checkbox" id="chk-exibir-titulo" class="chk-input"> Exibir</label>
             </div>
             <div style="display:flex; gap:10px;">
-                <button class="btn-file btn-folder" onclick="document.getElementById('folder-input').click()" data-tooltip="Selecione a pasta com seus áudios para reconexão automática.">📂 Pasta Mídia</button>
+                <button class="btn-file btn-folder" onclick="document.getElementById('folder-input').click()" data-tooltip="Selecione a pasta onde estão seus áudios/imagens para reconexão automática.">📂 Pasta Mídia</button>
                 <a href="manual.html" target="_blank" class="btn-file" data-tooltip="Ver Manual de Uso">❓ Manual</a>
                 <a href="sobre.html" target="_blank" class="btn-file" data-tooltip="Sobre o Projeto">ℹ️ Sobre</a>
                 <button class="btn-file" onclick="salvarConfiguracao()" data-tooltip="Salvar a programação.">💾 Salvar</button>
@@ -316,7 +318,7 @@
 
     <script>
         // --- VARIÁVEIS GLOBAIS ---
-        let mediaCache = {}; // Armazena arquivos da pasta de trabalho
+        let mediaCache = {}; // Cache de arquivos
         let cronograma=[], indexAtual=0, tempoRestante=0, estado="PARADO", intervaloTimer=null, dataFimGlobal=null, emIntervalo=false;
         let activeAudio = null; 
         let audioResumeAction = null;
@@ -335,35 +337,32 @@
             }
             alert(`${count} arquivos mapeados! O sistema tentará reconectar arquivos automaticamente.`);
             
-            // Tenta atualizar visualmente os campos de arquivo que estavam faltando
-            document.querySelectorAll('.audio-slot').forEach(slot => {
-                // Tentar ler atributo data-filename se existir (precisa ser implementado no load)
-                // Por enquanto, apenas o mapeamento está ativo.
-                verificarStatusMidia(slot);
-            });
-            
-            document.querySelectorAll('.fase-row').forEach(row => {
-                verificarStatusMidiaImg(row);
-            });
+            // Re-validar slots existentes
+            document.querySelectorAll('.audio-slot').forEach(slot => verificarStatusMidia(slot));
         }
 
         function verificarStatusMidia(slot) {
             const label = slot.querySelector('.file-status');
             const fname = slot.dataset.filename;
-            if(!fname) return;
             
+            if(!fname) return; // Se não tem nome salvo, ignora
+            
+            // Remove o label antigo se existir para recriar
+            if(label) label.remove();
+
+            let statusHtml = '';
             if(mediaCache[fname]) {
-                if(label) { label.innerText = `✅ Encontrado: ${fname}`; label.className = "file-status status-ok"; }
+                statusHtml = `<span class="file-status status-ok">✅ Arquivo Vinculado (Cache)</span>`;
             } else {
-                if(label) { label.innerText = `❌ Não encontrado: ${fname}`; label.className = "file-status status-missing"; }
+                statusHtml = `<span class="file-status status-missing">❌ Arquivo Faltando: ${fname}</span>`;
             }
+            
+            // Insere logo após o input file
+            const fileInput = slot.querySelector('.aud-file');
+            if(fileInput) fileInput.insertAdjacentHTML('afterend', statusHtml);
         }
 
-        function verificarStatusMidiaImg(row) {
-            // Logica similar para imagem de fundo se implementada
-        }
-
-        // --- SISTEMA DE UI: IGNORAR/ATIVAR ---
+        // --- SISTEMA DE UI ---
         function toggleIgnorarInicio() {
             const chk = document.getElementById('chk-ignorar-inicio');
             document.getElementById('hora-inicio').disabled = chk.checked;
@@ -515,21 +514,13 @@
 
             const div = document.createElement('div'); 
             div.className = 'audio-slot';
-            if(fname) div.dataset.filename = fname; // Armazena nome para busca
-
-            let statusHtml = '';
-            if(fname) {
-                statusHtml = `<span class="file-status ${mediaCache[fname] ? 'status-ok' : 'status-missing'}">
-                    ${mediaCache[fname] ? '✅ Encontrado: ' : '❌ Faltando: '}${fname}
-                </span>`;
-            }
+            if(fname) div.dataset.filename = fname; 
 
             div.innerHTML = `
                 <div class="grp"><label>Disparo</label><div><input type="number" class="aud-min" value="${min}" placeholder="Min" oninput="recalcularOpcoesAudio(this.closest('.fase-wrapper'))">:<input type="number" class="aud-sec" value="${sec}" placeholder="Seg" oninput="recalcularOpcoesAudio(this.closest('.fase-wrapper'))"></div></div>
                 <div class="grp">
                     <label>Arquivo</label>
-                    <input type="file" class="aud-file" accept="audio/*">
-                    ${statusHtml}
+                    <input type="file" class="aud-file" accept="audio/*" onchange="this.closest('.audio-slot').dataset.filename = this.files[0].name; verificarStatusMidia(this.closest('.audio-slot'))">
                 </div>
                 <div class="grp"><label>Duração(s)</label><input type="number" class="aud-dur" value="${dur}" placeholder="0=Tudo"></div>
                 <div class="grp"><label>Loop</label><input type="checkbox" class="aud-loop" ${loop?'checked':''} style="width:20px;height:20px;"></div>
@@ -541,6 +532,8 @@
             `;
             list.appendChild(div);
             
+            // Check inicial
+            verificarStatusMidia(div);
             if(div.closest('.fase-wrapper')) recalcularOpcoesAudio(div.closest('.fase-wrapper'));
         }
 
@@ -622,9 +615,8 @@
                     const customAudios = [];
                     wrap.querySelectorAll('.audio-slot').forEach(slot => {
                         const fileIn = slot.querySelector('.aud-file');
-                        let fName = slot.dataset.filename || ""; // Pega do dataset se existir
-                        
-                        // Se usuário selecionou novo arquivo, sobrescreve
+                        let fName = slot.dataset.filename || ""; 
+                        // Prioridade para o que está no input visual
                         if(fileIn.files.length > 0) fName = fileIn.files[0].name;
                         
                         customAudios.push({
@@ -723,9 +715,9 @@
                     uiAtualizarFase(row); 
                 });
                 alert("Configuração carregada!");
-                // Re-verificar pasta de mídia se já estiver carregada
+                // Re-verificar com cache se disponível
                 if(Object.keys(mediaCache).length > 0) {
-                    document.querySelectorAll('.audio-slot').forEach(s => verificarStatusMidia(s));
+                    document.querySelectorAll('.audio-slot').forEach(slot => verificarStatusMidia(slot));
                 }
             }
         }
@@ -754,14 +746,14 @@
 
                 // --- LÓGICA UNIFICADA DE SOBRA DE TEMPO ---
                 if(!ignorarF) {
-                    // Calcula duração total do programa atual
+                    // Calcula duração total do programa
                     const durationMin = obterDuracaoTotalMinutos();
-                    // Calcula tempo disponível REAL (Até o final)
+                    // Calcula tempo disponível ATÉ O FINAL
                     const availableMin = (dataFimGlobal - now) / 60000;
                     
                     const folga = Math.floor(availableMin - durationMin);
 
-                    // Se sobrar mais de 1 minuto, independente do horário de início
+                    // Se sobrar mais de 1 minuto
                     if(folga >= 1) {
                         surplusMinutes = folga;
                         
@@ -775,9 +767,8 @@
                     }
                 }
 
-                // Se não tem folga no teto, verifica se está apenas "Adiantado no Relógio" (se início não ignorado)
+                // Se não tem folga no teto, verifica se está apenas "Adiantado no Relógio"
                 if(!ignorarI && now < dIni && !document.getElementById('modal-surplus-check').style.display.includes('flex')) {
-                    // Configura pendência para modal de Early Start
                     pendingDataInicio = dIni;
                     document.getElementById('modal-early-start').style.display = 'flex';
                     return;
@@ -796,17 +787,16 @@
             document.getElementById('modal-surplus-check').style.display = 'none';
             
             if(choice === 'wait') {
-                // Inserir Aguarde: Cria um target time baseado na folga a partir de AGORA
+                // Inserir Aguarde: Cria um target time AGORA + FOLGA
                 const now = new Date();
                 const targetWait = new Date(now.getTime() + (surplusMinutes * 60000));
                 iniciarEspera(targetWait);
             
             } else if (choice === 'distribute') {
-                // Abre menu de distribuição
                 document.getElementById('modal-surplus-dist').style.display = 'flex';
             
             } else {
-                // Iniciar Direto (ignora folga, termina cedo)
+                // Iniciar Direto
                 construirCronograma();
                 rodarSistema(new Date());
             }
