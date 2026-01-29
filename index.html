@@ -2,31 +2,26 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Cronos v1.344 - Com Relatório</title>
+    <title>Cronos v1.346 - Final</title>
     <style>
-        /* --- ESTILOS GERAIS --- */
+        /* --- ESTILOS GERAIS (INTERFACE) --- */
         :root { --accent: #00d2ff; --bg: #121212; --panel: #1e1e1e; --text: #e0e0e0; }
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; height: 100vh; overflow: hidden; cursor: default; }
         
-        /* --- CONFIGURAÇÃO --- */
         #config-screen { padding: 20px; height: 100vh; overflow-y: auto; box-sizing: border-box; max-width: 1200px; margin: 0 auto; }
         .painel-top { background: var(--panel); padding: 15px; border-radius: 8px; border-left: 5px solid var(--accent); margin-bottom: 20px; display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end; }
         .campo { display: flex; flex-direction: column; }
         .campo label { font-size: 0.8rem; color: #bbb; margin-bottom: 5px; }
         
-        input, select { background: #333; color: white; border: 1px solid #555; padding: 8px; border-radius: 4px; }
-        .btn-small { background: #444; border: 1px solid #666; color: #fff; width: 30px; height: 35px; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+        input { background: #333; color: white; border: 1px solid #555; padding: 8px; border-radius: 4px; }
+        .btn-small { background: #444; border: 1px solid #666; color: #fff; width: 35px; height: 35px; border-radius: 4px; cursor: pointer; }
         .btn-small:hover { background: var(--accent); color: #000; }
         
-        #global-titulo { background: transparent; border: none; font-size: 1.8rem; font-weight: bold; color: var(--accent); width: 100%; padding: 5px; }
+        #global-titulo { background: transparent; border: none; font-size: 1.8rem; font-weight: bold; color: var(--accent); width: 100%; }
 
         .btn-file { background: #444; border: 1px solid #666; color: #fff; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; text-decoration: none; display: flex; align-items: center; gap: 5px; }
         .btn-file:hover { background: #555; }
-        .btn-folder { background: #28a745; border-color: #28a745; font-weight: bold; }
 
-        .chk-label { display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 0.9rem; }
-        input[type="color"] { cursor: pointer; width: 50px; height: 40px; border-radius: 4px; background: none; border: 1px solid #555; }
-        
         .fase-wrapper { margin-bottom: 10px; border: 1px solid #444; border-radius: 6px; background: #252526; overflow: hidden; }
         .fase-row { padding: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         
@@ -38,45 +33,39 @@
         .btn-add { background: #444; color: white; border: 1px solid #666; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
         .btn-go { background: linear-gradient(135deg, #00d2ff, #0072ff); color: white; border: none; padding: 15px; flex-grow: 1; font-weight: bold; font-size: 1.1rem; border-radius: 4px; cursor: pointer; }
 
-        /* --- APRESENTAÇÃO --- */
-        #display-screen { display: none; height: 100vh; width: 100vw; flex-direction: column; align-items: center; justify-content: center; background-size: cover; background-position: center; position: relative; }
+        /* --- APRESENTAÇÃO (DARK MODE ORIGINAL) --- */
+        #display-screen { display: none; height: 100vh; width: 100vw; flex-direction: column; align-items: center; justify-content: center; background-color: #000; background-size: cover; background-position: center; position: relative; }
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1; }
         #relogio-real { position: absolute; top: 15px; right: 20px; z-index: 20; font-size: 1.5rem; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 20px; border: 1px solid #444; }
-        #btn-sair { position: absolute; top: 15px; left: 20px; z-index: 20; background: none; border: none; color: #555; font-size: 1.2rem; cursor: pointer; }
-
-        .conteudo-box { z-index: 10; text-align: center; padding: 40px; border-radius: 20px; background: rgba(20, 20, 20, 0.8); backdrop-filter: blur(5px); min-width: 60%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; }
-        #timer-principal { font-size: 9rem; margin: 0; font-weight: bold; line-height: 1; font-variant-numeric: tabular-nums; }
+        
+        .conteudo-box { z-index: 10; text-align: center; padding: 40px; border-radius: 20px; background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(8px); min-width: 65%; box-shadow: 0 10px 50px rgba(0,0,0,0.9); position: relative; }
+        #timer-principal { font-size: 9.5rem; margin: 0; font-weight: bold; line-height: 1; font-variant-numeric: tabular-nums; }
         
         .piscando-cor { animation: pulse-opacity 1s infinite; }
-        @keyframes pulse-opacity { 50% { opacity: 0.5; } }
+        @keyframes pulse-opacity { 50% { opacity: 0.3; } }
         .piscando-vermelho { color: #ff4444 !important; animation: pulse-red 1s infinite; }
-        @keyframes pulse-red { 50% { text-shadow: 0 0 25px red; } }
-        .bg-panic { background-color: #300000 !important; animation: bg-flash 1s infinite; }
-        @keyframes bg-flash { 50% { background-color: #600000 !important; } }
-
-        /* MODAIS */
-        .modal-base { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; }
-        .modal-box { background: #222; padding: 30px; border-radius: 10px; border: 1px solid #444; max-width: 500px; text-align: center; }
-        .btn-modal { padding: 12px; border: none; background: #333; color: white; cursor: pointer; border-radius: 4px; width: 100%; margin-top: 10px; }
+        @keyframes pulse-red { 50% { text-shadow: 0 0 30px red; } }
+        .bg-panic { background-color: #400000 !important; animation: bg-flash 0.8s infinite; }
+        @keyframes bg-flash { 50% { background-color: #900000 !important; } }
     </style>
 </head>
 <body>
 
-    <input type="file" id="file-input" style="display: none;" accept=".json" onchange="carregarArquivo(this)">
+    <input type="file" id="file-input" style="display: none;" onchange="carregarArquivo(this)">
     <input type="file" id="folder-input" style="display: none;" webkitdirectory directory onchange="processarPastaTrabalho(this)">
 
     <div id="config-screen">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:15px;">
             <div style="display:flex; align-items:center; gap:10px; flex-grow:1;">
-                <input type="text" id="global-titulo" value="Escola Sabatina">
+                <input type="text" id="global-titulo" value="Escola Sabatina Viva">
                 <input type="color" id="global-cor-titulo" value="#00d2ff">
-                <label class="chk-label"><input type="checkbox" id="chk-exibir-titulo" checked> Exibir</label>
+                <label style="font-size: 0.85rem;"><input type="checkbox" id="chk-exibir-titulo" checked> Exibir</label>
             </div>
             <div style="display:flex; gap:10px;">
-                <button class="btn-file btn-folder" onclick="document.getElementById('folder-input').click()">📂 Pasta Mídia</button>
+                <button class="btn-file" onclick="document.getElementById('folder-input').click()">📂 Pasta Mídia</button>
                 <a href="manual.html" target="_blank" class="btn-file">❓ Manual</a>
                 <a href="sobre.html" target="_blank" class="btn-file">ℹ️ Sobre</a>
-                <button class="btn-file" onclick="salvarConfiguracao()">💾 Salvar</button>
+                <button class="btn-file" onclick="exportarConfiguracao()">💾 Salvar</button>
                 <button class="btn-file" onclick="document.getElementById('file-input').click()">📂 Abrir</button>
             </div>
         </div>
@@ -85,9 +74,9 @@
             <div class="campo"><label>Início</label><div class="time-group"><input type="time" id="hora-inicio"><button class="btn-small" onclick="calcSetInicioAgora()">⏱️</button></div></div>
             <div class="campo"><label>Fim Absoluto</label><div class="time-group"><input type="time" id="hora-fim"><button class="btn-small" onclick="calcFimPeloInicio()">⏩</button></div></div>
             <div class="campo" style="flex-direction: row; align-items: center; gap: 20px;">
-                <label class="chk-label"><input type="checkbox" id="chk-intervalos" onchange="toggleIntervalosGlobais()"> Intervalos</label>
-                <label class="chk-label"><input type="checkbox" id="chk-audio-global" checked> Áudio</label>
-                <label class="chk-label"><input type="checkbox" id="chk-estouro-global" checked> Estouro</label>
+                <label style="font-size: 0.85rem;"><input type="checkbox" id="chk-intervalos" onchange="toggleIntervalosGlobais()"> Intervalos</label>
+                <label style="font-size: 0.85rem;"><input type="checkbox" id="chk-audio-global" checked> Áudio</label>
+                <label style="font-size: 0.85rem;"><input type="checkbox" id="chk-estouro-global" checked> Estouro</label>
             </div>
         </div>
 
@@ -100,14 +89,14 @@
     </div>
 
     <div id="display-screen">
-        <button id="btn-sair" onclick="encerrar(true)">✕</button>
+        <button style="position:absolute; top:15px; left:20px; z-index:30; color:#555; background:none; border:none; font-size:1.5rem; cursor:pointer;" onclick="encerrar(true)">✕</button>
         <div class="overlay"></div>
         <div id="relogio-real">--:--</div>
         <div class="conteudo-box">
-            <h1 id="display-global-titulo" class="hidden"></h1>
-            <h2 id="titulo-fase">...</h2>
+            <h1 id="display-global-titulo" class="hidden" style="font-size:1.5rem; margin-bottom:10px; text-transform:uppercase;"></h1>
+            <h2 id="titulo-fase" style="font-size:2.5rem; margin:0; text-transform:uppercase;">...</h2>
             <div id="timer-principal">00:00</div>
-            <div style="margin-top: 20px; display: flex; justify-content: center; gap: 10px;">
+            <div style="margin-top:25px; display:flex; justify-content:center; gap:15px;">
                 <button id="btn-pausar" class="btn-add" onclick="acaoPausar()">⏸ PAUSAR</button>
                 <button id="btn-continuar" class="btn-add hidden" onclick="acaoContinuar()">▶ CONTINUAR</button>
                 <button class="btn-add" onclick="acaoAdicionarTempo()">+1 Min</button>
@@ -118,94 +107,103 @@
 
     <div id="modal-decisao" class="modal-base">
         <div class="modal-box">
-            <h2 style="color:#ff4444;">⚠️ Tempo Excedido</h2>
-            <p>A programação é maior que o tempo disponível.</p>
-            <button class="btn-modal" onclick="resolverConflitoFlexivel(1)">Ajustar Flexíveis</button>
-            <button class="btn-modal" onclick="rodarSistema()">Manter Original</button>
+            <h2 style="color:#ff4444; margin-top:0;">⚠️ Tempo Excedido</h2>
+            <p>O tempo total planejado é maior que o disponível até o fim.</p>
+            <button class="btn-add" style="width:100%; margin-bottom:10px;" onclick="resolverConflitoFlexivel()">Ajustar Flexíveis</button>
+            <button class="btn-add" style="width:100%; background:#444;" onclick="rodarSistema()">Manter Original</button>
         </div>
     </div>
 
     <script>
-        /* --- ESTADO --- */
-        let cronograma = []; 
-        let indexAtual = 0; 
-        let tempoRestante = 0; 
-        let estado = "PARADO";
-        let intervaloTimer = null; 
-        let dataFimGlobal = null; 
-        let activeAudio = null;
-        let emIntervalo = false;
-        let historicoExecucao = []; // Novo: Guardar tempos reais
+        /* --- LOGICA --- */
+        let cronograma = []; let indexAtual = 0; let tempoRestante = 0; 
+        let estado = "PARADO"; let intervaloTimer = null; 
+        let dataFimGlobal = null; let activeAudio = null;
+        let emIntervalo = false; let historicoExecucao = [];
 
         const formatTime = (d) => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
         const montarData = (s, ref) => { const [h, m] = s.split(':'); const d = new Date(ref); d.setHours(h, m, 0, 0); return d; };
 
-        function playSmartAudio(src, loop) {
-            if (!document.getElementById('chk-audio-global').checked) return;
-            if (activeAudio) { activeAudio.pause(); }
-            activeAudio = new Audio(src); activeAudio.loop = loop; activeAudio.play();
+        /* --- ARQUIVOS --- */
+        function exportarConfiguracao() {
+            const config = {
+                titulo: document.getElementById('global-titulo').value,
+                cor: document.getElementById('global-cor-titulo').value,
+                exibirTit: document.getElementById('chk-exibir-titulo').checked,
+                hIni: document.getElementById('hora-inicio').value,
+                hFim: document.getElementById('hora-fim').value,
+                fases: Array.from(document.querySelectorAll('.fase-wrapper')).map(w => {
+                    const r = w.querySelector('.fase-row');
+                    return { tit: r.querySelector('.inp-titulo').value, min: r.querySelector('.inp-tempo').value, flex: r.querySelector('.inp-flexivel').checked, bg: r.querySelector('.inp-bg').value, txt: r.querySelector('.inp-txt').value }
+                })
+            };
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(config, null, 2)], {type:'application/json'}));
+            a.download = `Cronos_Config.json`; a.click();
         }
 
-        function adicionarFase(tit="", min=10) {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'fase-wrapper';
-            wrapper.innerHTML = `
+        function carregarArquivo(input) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const c = JSON.parse(e.target.result);
+                document.getElementById('global-titulo').value = c.titulo;
+                document.getElementById('global-cor-titulo').value = c.cor;
+                document.getElementById('hora-inicio').value = c.hIni;
+                document.getElementById('hora-fim').value = c.hFim;
+                document.getElementById('lista-fases').innerHTML = '';
+                c.fases.forEach(f => {
+                    const w = adicionarFase(f.tit, f.min, f.bg, f.txt);
+                    w.querySelector('.inp-flexivel').checked = f.flex;
+                });
+            };
+            reader.readAsText(input.files[0]);
+        }
+
+        /* --- INTERFACE --- */
+        function adicionarFase(tit="", min=10, bg="#121212", txt="#ffffff") {
+            const w = document.createElement('div'); w.className = 'fase-wrapper';
+            w.innerHTML = `
                 <div class="fase-row">
                     <button class="btn-x" onclick="this.closest('.fase-wrapper').remove()">X</button>
                     <div class="campo" style="flex:2"><label>Etapa</label><input type="text" class="inp-titulo" value="${tit}"></div>
                     <div class="campo" style="width:60px"><label>Min</label><input type="number" class="inp-tempo" value="${min}"></div>
                     <div class="campo"><label>Flexível?</label><input type="checkbox" class="inp-flexivel" checked></div>
-                    <div class="campo col-intervalo hidden"><label>Pausa(s)</label><input type="number" class="inp-int-tempo" value="30"></div>
-                    <div class="campo"><label>Bg</label><input type="color" class="inp-bg" value="#121212"></div>
-                    <div class="campo"><label>Txt</label><input type="color" class="inp-txt" value="#ffffff"></div>
+                    <div class="campo col-intervalo hidden"><label>Pausa</label><input type="number" class="inp-int-tempo" value="30"></div>
+                    <div class="campo"><label>Bg</label><input type="color" class="inp-bg" value="${bg}"></div>
+                    <div class="campo"><label>Txt</label><input type="color" class="inp-txt" value="${txt}"></div>
                     <div class="campo"><input type="file" class="inp-img" style="font-size:0.7rem"></div>
                     <button class="btn-small" onclick="this.closest('.fase-wrapper').querySelector('.audio-panel').classList.toggle('open')">🎵</button>
                 </div>
                 <div class="audio-panel"><div class="audio-list"></div><button class="btn-add" style="padding:5px" onclick="adicionarSlotAudio(this.parentElement)">+ Som</button></div>
             `;
-            document.getElementById('lista-fases').appendChild(wrapper);
-            toggleIntervalosGlobais();
+            document.getElementById('lista-fases').appendChild(w); return w;
         }
 
-        function adicionarSlotAudio(panel) {
-            const div = document.createElement('div');
-            div.className = 'fase-row';
-            div.innerHTML = `<input type="number" class="aud-min" value="0" style="width:40px">:<input type="number" class="aud-sec" value="0" style="width:40px"> <input type="file" class="aud-file" accept="audio/*"> <input type="checkbox" class="aud-loop"> <button class="btn-x" onclick="this.parentElement.remove()">-</button>`;
-            panel.querySelector('.audio-list').appendChild(div);
+        function adicionarSlotAudio(p) {
+            const d = document.createElement('div'); d.className = 'fase-row';
+            d.innerHTML = `<input type="number" class="aud-min" value="0" style="width:40px">:<input type="number" class="aud-sec" value="0" style="width:40px"> <input type="file" class="aud-file" accept="audio/*"> <button class="btn-x" onclick="this.parentElement.remove()">-</button>`;
+            p.querySelector('.audio-list').appendChild(d);
         }
 
+        /* --- RODAR --- */
         function iniciarApresentacao() {
             historicoExecucao = [];
-            const hI = document.getElementById('hora-inicio').value;
-            const hF = document.getElementById('hora-fim').value;
-            if (!hI || !hF) return alert("Defina horários!");
-            dataFimGlobal = montarData(hF, new Date());
+            dataFimGlobal = montarData(document.getElementById('hora-fim').value, new Date());
             construirCronograma();
-            const totalS = cronograma.reduce((a, b) => a + b.segundosFinais, 0);
-            const dispS = (dataFimGlobal - montarData(hI, new Date())) / 1000;
+            const totalS = cronograma.reduce((a, b) => a + b.segS, 0);
+            const dispS = (dataFimGlobal - montarData(document.getElementById('hora-inicio').value, new Date())) / 1000;
             if (totalS > dispS + 5) document.getElementById('modal-decisao').style.display = 'flex';
             else rodarSistema();
         }
 
         function construirCronograma() {
             cronograma = [];
-            document.querySelectorAll('.fase-wrapper').forEach(wrap => {
-                const row = wrap.querySelector('.fase-row');
-                const auds = [];
-                wrap.querySelectorAll('.audio-list .fase-row').forEach(s => {
-                    const f = s.querySelector('.aud-file').files[0];
-                    if(f) auds.push({ t: (parseInt(s.querySelector('.aud-min').value)*60) + parseInt(s.querySelector('.aud-sec').value), src: URL.createObjectURL(f), loop: s.querySelector('.aud-loop').checked });
-                });
-                const img = row.querySelector('.inp-img').files[0];
+            document.querySelectorAll('.fase-wrapper').forEach(w => {
+                const r = w.querySelector('.fase-row');
+                const img = r.querySelector('.inp-img').files[0];
                 cronograma.push({
-                    titulo: row.querySelector('.inp-titulo').value,
-                    segundosFinais: parseFloat(row.querySelector('.inp-tempo').value) * 60,
-                    flexivel: row.querySelector('.inp-flexivel').checked,
-                    intSegS: parseInt(row.querySelector('.inp-int-tempo').value) || 0,
-                    bg: row.querySelector('.inp-bg').value,
-                    txt: row.querySelector('.inp-txt').value,
-                    img: img ? URL.createObjectURL(img) : null,
-                    audios: auds
+                    tit: r.querySelector('.inp-titulo').value, segS: parseFloat(r.querySelector('.inp-tempo').value)*60,
+                    flex: r.querySelector('.inp-flexivel').checked, bg: r.querySelector('.inp-bg').value, txt: r.querySelector('.inp-txt').value,
+                    img: img ? URL.createObjectURL(img) : null, auds: [], iniR: null
                 });
             });
         }
@@ -224,128 +222,86 @@
         }
 
         function rodarFase(idx) {
-            if (idx >= cronograma.length) return encerrar(false);
-            
-            // Salvar fim da fase anterior no histórico
-            if (idx > 0) registrarHistorico();
-
-            indexAtual = idx;
-            const f = cronograma[idx];
-            tempoRestante = f.segundosFinais;
-            emIntervalo = false;
-            estado = "RODANDO";
-            
-            // Marcar início real
-            f.inicioReal = new Date();
-            
-            aplicarVisual(f);
+            if (idx >= cronograma.length) return encerrar();
+            if (indexAtual < idx && cronograma[indexAtual]) registrarHist();
+            indexAtual = idx; const f = cronograma[idx]; f.iniR = new Date();
+            tempoRestante = f.segS; estado = "RODANDO"; aplicarVis(f);
             if (intervaloTimer) clearInterval(intervaloTimer);
             intervaloTimer = setInterval(tick, 1000);
         }
 
-        function registrarHistorico() {
-            const f = cronograma[indexAtual];
-            const fimReal = new Date();
-            const duracaoSeg = Math.floor((fimReal - f.inicioReal) / 1000);
-            historicoExecucao.push({
-                titulo: f.titulo,
-                planejado: f.segundosFinais,
-                real: duracaoSeg
-            });
+        function registrarHist() {
+            const f = cronograma[indexAtual]; if(!f.iniR) return;
+            const real = Math.floor((new Date() - f.iniR)/1000);
+            historicoExecucao.push({ t: f.tit, p: f.segS, r: real });
         }
 
         function tick() {
-            if (estado !== "RODANDO" && estado !== "INTERVALO") return;
-            if (estado === "RODANDO") {
-                cronograma[indexAtual].audios.forEach(a => { if(a.t === Math.floor(tempoRestante)) playSmartAudio(a.src, a.loop); });
-            }
-            tempoRestante--;
-            atualizarDisplay();
+            tempoRestante--; atualizarDisplay();
             if (tempoRestante < 0) {
                 if (document.getElementById('chk-estouro-global').checked || indexAtual === cronograma.length - 1) {
-                    if (tempoRestante % 30 === 0) {
-                        try {
-                            const c = new AudioContext(); const o = c.createOscillator(); o.connect(c.destination); o.start(); o.stop(c.currentTime+0.1);
-                        } catch(e){}
-                    }
-                } else {
-                    clearInterval(intervaloTimer);
-                    if (!emIntervalo && cronograma[indexAtual].intSegS > 0) {
-                        estado = "INTERVALO"; emIntervalo = true; tempoRestante = cronograma[indexAtual].intSegS;
-                        document.getElementById('titulo-fase').innerText = "INTERVALO";
-                    } else rodarFase(indexAtual + 1);
-                }
+                    if (tempoRestante % 30 === 0) tocarBip();
+                } else rodarFase(indexAtual + 1);
             }
         }
 
+        function tocarBip() { try{ const c=new AudioContext(); const o=c.createOscillator(); o.connect(c.destination); o.start(); o.stop(c.currentTime+0.1); }catch(e){} }
+
         function atualizarDisplay() {
-            const el = document.getElementById('timer-principal');
-            const abs = Math.abs(tempoRestante);
+            const el = document.getElementById('timer-principal'); const abs = Math.abs(tempoRestante);
             el.innerText = `${tempoRestante < 0 ? "-" : ""}${String(Math.floor(abs/60)).padStart(2,'0')}:${String(abs%60).padStart(2,'0')}`;
             el.className = tempoRestante < 0 ? "piscando-vermelho" : (tempoRestante < 30 ? "piscando-cor" : "");
             document.getElementById('display-screen').className = tempoRestante < -30 ? "bg-panic" : "";
         }
 
-        function aplicarVisual(f) {
-            const ds = document.getElementById('display-screen');
-            ds.style.backgroundColor = f.bg;
+        function aplicarVis(f) {
+            const ds = document.getElementById('display-screen'); ds.style.backgroundColor = f.bg;
             ds.style.backgroundImage = f.img ? `url('${f.img}')` : 'none';
-            document.getElementById('titulo-fase').innerText = f.titulo;
+            document.getElementById('titulo-fase').innerText = f.tit;
             document.getElementById('titulo-fase').style.color = f.txt;
             document.getElementById('timer-principal').style.color = f.txt;
         }
 
         function acaoPausar() { estado = "PAUSADO"; clearInterval(intervaloTimer); document.getElementById('btn-pausar').classList.add('hidden'); document.getElementById('btn-continuar').classList.remove('hidden'); }
-        function acaoContinuar() { estado = emIntervalo ? "INTERVALO" : "RODANDO"; intervaloTimer = setInterval(tick, 1000); document.getElementById('btn-pausar').classList.remove('hidden'); document.getElementById('btn-continuar').classList.add('hidden'); }
+        function acaoContinuar() { estado = "RODANDO"; intervaloTimer = setInterval(tick, 1000); document.getElementById('btn-pausar').classList.remove('hidden'); document.getElementById('btn-continuar').classList.add('hidden'); }
         function acaoAvançar() { rodarFase(indexAtual + 1); }
         function acaoAdicionarTempo() { tempoRestante += 60; }
 
-        function encerrar(manual) {
-            if (indexAtual < cronograma.length) registrarHistorico();
-            clearInterval(intervaloTimer);
-            if (activeAudio) activeAudio.pause();
-            
-            mostrarRelatorio();
-
+        function encerrar() {
+            registrarHist(); clearInterval(intervaloTimer);
+            let res = "📊 RELATÓRIO:\n\n";
+            historicoExecucao.forEach(h => res += `🔹 ${h.t}: ${Math.floor(h.r/60)}m${h.r%60}s\n`);
+            alert(res);
             document.getElementById('display-screen').style.display = 'none';
             document.getElementById('config-screen').style.display = 'block';
         }
 
-        function mostrarRelatorio() {
-            let msg = "📊 RELATÓRIO DE EXECUÇÃO\n\n";
-            historicoExecucao.forEach(h => {
-                const diff = h.real - h.planejado;
-                const sinal = diff > 0 ? "+" : "";
-                msg += `🔹 ${h.titulo}\n   Planejado: ${Math.floor(h.planejado/60)}m | Real: ${Math.floor(h.real/60)}m ${String(h.real%60).padStart(2,'0')}s (${sinal}${diff}s)\n\n`;
-            });
-            alert(msg);
-        }
-
         function resolverConflitoFlexivel() {
-            const flexS = cronograma.filter(f => f.flexivel).reduce((a, b) => a + b.segundosFinais, 0);
-            const fixoS = cronograma.filter(f => !f.flexivel).reduce((a, b) => a + b.segundosFinais, 0);
-            const dispS = (dataFimGlobal - new Date()) / 1000;
+            const flexS = cronograma.filter(f => f.flex).reduce((a, b) => a + b.segS, 0);
+            const fixoS = cronograma.filter(f => !f.flex).reduce((a, b) => a + b.segS, 0);
+                const dispS = (dataFimGlobal - new Date()) / 1000;
             const fator = (dispS - fixoS) / flexS;
-            if (fator > 0) cronograma.forEach(f => { if (f.flexivel) f.segundosFinais = Math.floor(f.segundosFinais * fator); });
+            if (fator > 0) cronograma.forEach(f => { if (f.flex) f.segS = Math.floor(f.segS * fator); });
             rodarSistema();
         }
 
         function toggleIntervalosGlobais() {
-            const ativo = document.getElementById('chk-intervalos').checked;
-            document.querySelectorAll('.col-intervalo').forEach(el => ativo ? el.classList.remove('hidden') : el.classList.add('hidden'));
+            const a = document.getElementById('chk-intervalos').checked;
+            document.querySelectorAll('.col-intervalo').forEach(el => a ? el.classList.remove('hidden') : el.classList.add('hidden'));
         }
         function calcSetInicioAgora() { document.getElementById('hora-inicio').value = formatTime(new Date()); }
         function calcFimPeloInicio() {
-            const d = montarData(document.getElementById('hora-inicio').value || "09:00", new Date());
+            const d = montarData(document.getElementById('hora-inicio').value || "09:20", new Date());
             let m = 0; document.querySelectorAll('.inp-tempo').forEach(i => m += parseFloat(i.value));
             d.setMinutes(d.getMinutes() + m); document.getElementById('hora-fim').value = formatTime(d);
         }
 
         window.onload = () => {
             calcSetInicioAgora();
-            adicionarFase("Confraternização", 10);
-            adicionarFase("Missão", 15);
-            adicionarFase("Estudo", 35);
+            adicionarFase("Confraternização", 10, "#ffcc00", "#ffffff");
+            adicionarFase("Missão", 15, "#28a745", "#ffffff");
+            adicionarFase("Estudo da Bíblia e Oração", 30, "#007bff", "#ffffff");
+            document.getElementById('hora-fim').value = "10:15";
             setInterval(() => { document.getElementById('relogio-real').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }, 1000);
         };
     </script>
