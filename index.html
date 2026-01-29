@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Cronos v1.348 - Final Flex</title>
+    <title>Cronos v1.349 - Flow Fix</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         :root { --accent: #00d2ff; --bg: #121212; --panel: #1e1e1e; --text: #e0e0e0; --success: #28a745; --warning: #ffaa00; --danger: #ff4444; }
@@ -327,6 +327,7 @@
         let pendingDataInicio = null;
         let wakeLock = null; // API de Wake Lock
         let audioCtxGlobal = null; // Singleton para AudioContext
+        let pendingJsonLoad = false; // Flag para carregar JSON após pasta
 
         // --- 2. FUNÇÕES AUXILIARES ---
         function montarData(s, ref) {
@@ -456,6 +457,12 @@
             }
             alert(`${count} arquivos mapeados! O sistema usará estes arquivos quando o cronograma solicitar pelo nome.`);
             document.querySelectorAll('.audio-slot').forEach(slot => verificarStatusMidia(slot));
+
+            // AUTO-TRIGGER JSON LOAD
+            if (pendingJsonLoad) {
+                pendingJsonLoad = false;
+                setTimeout(() => { document.getElementById('file-input').click(); }, 300);
+            }
         }
 
         // --- 4. FUNÇÕES DOM ---
@@ -608,6 +615,7 @@
 
         function triggerPastaMidia() {
             document.getElementById('modal-open-options').style.display = 'none';
+            pendingJsonLoad = true; // Marca para carregar JSON logo após
             document.getElementById('folder-input').click();
         }
 
