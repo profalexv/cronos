@@ -2,18 +2,16 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>cronos@alexandre.pro.br v1.67</title>
+    <title>Cronos v1.68</title>
     <style>
         /* --- ESTILOS GERAIS --- */
-        body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; cursor: default; }
+        :root { --accent: #00d2ff; --bg: #121212; --panel: #1e1e1e; --text: #e0e0e0; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; height: 100vh; overflow: hidden; cursor: default; }
         
         /* --- CONFIGURAÇÃO --- */
         #config-screen { padding: 20px; height: 100vh; overflow-y: auto; box-sizing: border-box; max-width: 1200px; margin: 0 auto; }
         
-        .painel-top { 
-            background: #1e1e1e; padding: 15px; border-radius: 8px; border-left: 5px solid #00d2ff; 
-            margin-bottom: 20px; display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end; 
-        }
+        .painel-top { background: var(--panel); padding: 15px; border-radius: 8px; border-left: 5px solid var(--accent); margin-bottom: 20px; display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end; }
         .campo { display: flex; flex-direction: column; }
         .campo label { font-size: 0.8rem; color: #bbb; margin-bottom: 5px; }
         
@@ -22,21 +20,16 @@
 
         .time-group { display: flex; align-items: center; gap: 5px; }
         .btn-small { background: #444; border: 1px solid #666; color: #fff; width: 30px; height: 35px; border-radius: 4px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; padding: 0; transition: 0.2s; }
-        .btn-small:hover:not(:disabled) { background: #00d2ff; color: #000; border-color: #00d2ff; }
-        .btn-small:disabled { opacity: 0.3; cursor: not-allowed; background: #222; border-color: #444; }
+        .btn-small:hover:not(:disabled) { background: var(--accent); color: #000; border-color: var(--accent); }
         
-        #global-titulo {
-            background: transparent; border: none; font-size: 1.8rem; font-weight: bold; 
-            color: #00d2ff; width: 100%; padding: 5px; margin: 0;
-        }
+        #global-titulo { background: transparent; border: none; font-size: 1.8rem; font-weight: bold; color: var(--accent); width: 100%; padding: 5px; margin: 0; }
         #global-titulo:focus { outline: 1px dashed #555; background: rgba(255,255,255,0.05); }
 
         .btn-file { background: #444; border: 1px solid #666; color: #fff; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; text-decoration: none; }
         .btn-file:hover { background: #555; border-color: #888; color: #fff; }
         
-        /* Botão Pasta Mídia */
-        .btn-folder { background: #28a745; border-color: #28a745; color: white; }
-        .btn-folder:hover { background: #218838; }
+        .btn-folder { background: #28a745; border-color: #28a745; font-weight: bold; }
+        .btn-folder:hover { background: #218838; border-color: #1e7e34; }
 
         .btn-icon { background: transparent; border: 1px solid #555; color: #aaa; width: 30px; height: 30px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .btn-icon:hover { background: #444; color: #fff; }
@@ -44,10 +37,7 @@
         .chk-label { display: flex; align-items: center; gap: 5px; cursor: pointer; margin: 0; font-size: 0.9rem; }
         .chk-input { width: 18px; height: 18px; cursor: pointer; }
 
-        input[type="color"] {
-            -webkit-appearance: none; border: 1px solid #555; width: 50px; height: 40px; padding: 0;
-            background: none; cursor: pointer; border-radius: 4px; overflow: hidden;
-        }
+        input[type="color"] { -webkit-appearance: none; border: 1px solid #555; width: 50px; height: 40px; padding: 0; background: none; cursor: pointer; border-radius: 4px; overflow: hidden; }
         input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
         input[type="color"]::-webkit-color-swatch { border: none; }
         
@@ -57,40 +47,28 @@
         .audio-panel { background: #151515; padding: 10px; border-top: 1px dashed #444; display: none; }
         .audio-panel.open { display: block; }
         
-        .audio-slot { 
-            display: flex; gap: 10px; align-items: flex-end; margin-bottom: 8px; 
-            background: #222; padding: 8px; border-radius: 4px; border-left: 3px solid #00d2ff; flex-wrap: wrap; transition: opacity 0.3s;
-        }
-        .audio-slot .grp { display: flex; flex-direction: column; transition: opacity 0.3s, width 0.3s; }
+        .audio-slot { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 8px; background: #222; padding: 8px; border-radius: 4px; border-left: 3px solid var(--accent); flex-wrap: wrap; transition: opacity 0.3s; }
+        .audio-slot .grp { display: flex; flex-direction: column; }
         .audio-slot label { font-size: 0.7rem; color: #888; margin-bottom: 2px; }
         .audio-slot input[type="number"] { width: 50px; padding: 5px; font-size: 0.9rem; background: #333; border: 1px solid #555; }
         
         /* Status de Arquivo */
-        .file-status { 
-            font-size: 0.75rem; margin-top: 4px; display: flex; align-items: center; gap: 5px; 
-            background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 3px;
-        }
-        .status-ok { color: #28a745; border-left: 2px solid #28a745; }
-        .status-missing { color: #ff4444; border-left: 2px solid #ff4444; }
+        .file-status { font-size: 0.75rem; margin-top: 4px; display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.3); padding: 3px 6px; border-radius: 3px; border: 1px solid #333; }
+        .status-ok { color: #28a745; border-left: 3px solid #28a745; }
+        .status-missing { color: #ff4444; border-left: 3px solid #ff4444; }
         
         .grp.disabled { opacity: 0.3; pointer-events: none; }
         .grp.vanish { display: none; }
 
-        .col-intervalo { background: rgba(255, 170, 0, 0.15); padding: 5px; border-radius: 4px; display: flex; gap: 5px; border: 1px dashed #666; }
-        .col-estouro { background: rgba(255, 68, 68, 0.15); padding: 5px; border-radius: 4px; display: flex; gap: 5px; border: 1px dashed #666; }
-        .col-audio { background: rgba(0, 210, 255, 0.15); padding: 5px; border-radius: 4px; display: flex; gap: 5px; border: 1px dashed #666; }
-        
+        .col-intervalo, .col-estouro, .col-audio { background: rgba(255,255,255,0.05); padding: 5px; border-radius: 4px; display: flex; gap: 5px; border: 1px dashed #444; }
         .hidden { display: none !important; }
-
-        #lista-fases .fase-wrapper:last-child .col-intervalo { visibility: hidden; pointer-events: none; }
-        #lista-fases .fase-wrapper:last-child .col-estouro { display: none; }
 
         .btn-x { background: #ff4444; color: white; border: none; width: 25px; height: 25px; border-radius: 50%; font-weight: bold; cursor: pointer; }
         .btn-add { background: #444; color: white; border: 1px solid #666; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
         .btn-go { background: linear-gradient(135deg, #00d2ff, #0072ff); color: white; border: none; padding: 15px; flex-grow: 1; font-weight: bold; font-size: 1.1rem; border-radius: 4px; cursor: pointer; }
 
         /* --- APRESENTAÇÃO --- */
-        #display-screen { display: none; height: 100vh; width: 100vw; flex-direction: column; align-items: center; justify-content: center; background-color: #000; background-size: cover; background-position: center; position: relative; transition: background-color 0.5s; }
+        #display-screen { display: none; height: 100vh; width: 100vw; flex-direction: column; align-items: center; justify-content: center; background-color: #000; background-size: cover; background-position: center; position: relative; }
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1; }
         
         #relogio-real { position: absolute; top: 15px; right: 20px; z-index: 20; font-size: 1.5rem; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 20px; border: 1px solid #444; }
@@ -104,12 +82,11 @@
         #lbl-fim { position: absolute; top: 0; left: 0; width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; font-size: 8rem; color: #ff4444; font-weight: 900; background: rgba(0,0,0,0.95); z-index: 50; border-radius: 20px 20px 0 0; line-height: 1; text-transform: uppercase; opacity: 0; pointer-events: none; }
         #lbl-fim.ativo { opacity: 1; }
 
-        #timer-principal { font-size: 9rem; margin: 0; font-weight: bold; line-height: 1; font-variant-numeric: tabular-nums; position: relative; z-index: 1; transition: font-size 0.5s ease; }
+        #timer-principal { font-size: 9rem; margin: 0; font-weight: bold; line-height: 1; font-variant-numeric: tabular-nums; position: relative; z-index: 1; }
         .timer-waiting { font-size: 4rem !important; color: #777 !important; text-shadow: none !important; }
 
         #info-horarios { display: flex; justify-content: center; gap: 40px; margin-top: 10px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); width: 100%; font-size: 1.1rem; color: #aaa; }
-        #info-horarios span { display: flex; align-items: center; gap: 8px; }
-
+        
         #rodape-info { margin-top: 15px; font-size: 1.2rem; color: #aaa; padding-top: 10px; display: flex; justify-content: space-between;}
 
         .controles-play { margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
@@ -125,15 +102,15 @@
         .btn-modal:hover { background: #444; }
         .btn-modal b { font-size: 1.1em; }
 
-        /* Modal Específico: Sobra de Tempo */
-        .dist-option { border-left: 4px solid #00d2ff; }
+        /* Modal Específico */
+        .dist-option { border-left: 4px solid var(--accent); }
         .dist-option:hover { background: rgba(0, 210, 255, 0.1); }
 
         #modal-audio-pause { z-index: 110; }
-        .audio-pause-box { background: #222; padding: 25px; border-radius: 10px; border: 1px solid #00d2ff; max-width: 400px; text-align: center; box-shadow: 0 0 30px rgba(0,210,255,0.3); }
+        .audio-pause-box { background: #222; padding: 25px; border-radius: 10px; border: 1px solid var(--accent); max-width: 400px; text-align: center; box-shadow: 0 0 30px rgba(0,210,255,0.3); }
         .btn-aud-opt { padding: 12px; border: none; color: #fff; cursor: pointer; border-radius: 4px; font-weight: bold; text-align: left; font-size: 1rem; width: 100%; margin-bottom: 10px;}
         
-        #custom-tooltip { position: fixed; background: rgba(0, 0, 0, 0.95); border: 1px solid #00d2ff; color: #fff; padding: 10px 15px; border-radius: 6px; font-size: 0.9rem; pointer-events: none; z-index: 9999; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.8); max-width: 250px; line-height: 1.4; }
+        #custom-tooltip { position: fixed; background: rgba(0, 0, 0, 0.95); border: 1px solid var(--accent); color: #fff; padding: 10px 15px; border-radius: 6px; font-size: 0.9rem; pointer-events: none; z-index: 9999; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.8); max-width: 250px; line-height: 1.4; }
 
         /* Animações */
         .piscando-cor { animation: pulse-opacity 1s infinite; }
@@ -145,7 +122,6 @@
         .bg-panic { animation: bg-flash 1s infinite; }
         @keyframes bg-flash { 0%, 100% { background-color: #300000; } 50% { background-color: #aa0000; } }
         @keyframes flash-strobe { 0%, 15% { opacity: 1; } 16%, 100% { opacity: 0; } }
-        @keyframes flash-strobe-panic { 0%, 15% { color: #ff4444; opacity: 1; } 16%, 49% { opacity: 0; } 50%, 65% { color: var(--txt-color); opacity: 1; } 66%, 100% { opacity: 0; } }
         .anim-slow { animation: flash-strobe 2.5s infinite; }
         .anim-med { animation: flash-strobe 1.5s infinite; }
         .anim-fast { animation: flash-strobe 0.5s infinite; }
@@ -163,10 +139,10 @@
             <div style="display:flex; align-items:center; gap:10px; flex-grow:1; margin-right:20px;">
                 <input type="text" id="global-titulo" value="Escola Sabatina Viva" data-tooltip="Clique para editar o título do evento.">
                 <input type="color" id="global-cor-titulo" value="#00d2ff" style="width:40px; height:35px; border:none;" data-tooltip="Alterar cor do título.">
-                <label class="chk-label" data-tooltip="Se marcado, exibe este título na tela de apresentação."><input type="checkbox" id="chk-exibir-titulo" class="chk-input"> Exibir</label>
+                <label class="chk-label"><input type="checkbox" id="chk-exibir-titulo" class="chk-input"> Exibir</label>
             </div>
             <div style="display:flex; gap:10px;">
-                <button class="btn-file btn-folder" onclick="document.getElementById('folder-input').click()" data-tooltip="Selecione a pasta onde estão seus áudios/imagens para reconexão automática.">📂 Pasta Mídia</button>
+                <button class="btn-file btn-folder" onclick="document.getElementById('folder-input').click()" data-tooltip="Selecione a pasta onde estão seus áudios para carregar automaticamente.">📂 Pasta Mídia</button>
                 <a href="manual.html" target="_blank" class="btn-file" data-tooltip="Ver Manual de Uso">❓ Manual</a>
                 <a href="sobre.html" target="_blank" class="btn-file" data-tooltip="Sobre o Projeto">ℹ️ Sobre</a>
                 <button class="btn-file" onclick="salvarConfiguracao()" data-tooltip="Salvar a programação.">💾 Salvar</button>
@@ -199,9 +175,9 @@
             </div>
             
             <div class="campo" style="flex-direction: row; align-items: center; gap: 20px; padding-bottom: 5px;">
-                <label class="chk-label" data-tooltip="Habilita a lógica de intervalos."><input type="checkbox" id="chk-intervalos" onchange="toggleIntervalosGlobais()" class="chk-input"> Intervalos</label>
-                <label class="chk-label" data-tooltip="Habilita contagem negativa."><input type="checkbox" id="chk-estouro-global" onchange="toggleEstouroGlobal()" class="chk-input"> Permitir Estouro</label>
-                <label class="chk-label" data-tooltip="Habilita sons."><input type="checkbox" id="chk-audio-global" onchange="toggleAudioGlobal()" class="chk-input"> Permitir Áudio</label>
+                <label class="chk-label"><input type="checkbox" id="chk-intervalos" onchange="toggleIntervalosGlobais()" class="chk-input"> Intervalos</label>
+                <label class="chk-label"><input type="checkbox" id="chk-estouro-global" onchange="toggleEstouroGlobal()" class="chk-input"> Permitir Estouro</label>
+                <label class="chk-label"><input type="checkbox" id="chk-audio-global" onchange="toggleAudioGlobal()" class="chk-input"> Permitir Áudio</label>
             </div>
         </div>
 
@@ -352,9 +328,9 @@
 
             let statusHtml = '';
             if(mediaCache[fname]) {
-                statusHtml = `<span class="file-status status-ok">✅ Arquivo Vinculado (Cache)</span>`;
+                statusHtml = `<span class="file-status status-ok">✅ Encontrado: ${fname} (Cache)</span>`;
             } else {
-                statusHtml = `<span class="file-status status-missing">❌ Arquivo Faltando: ${fname}</span>`;
+                statusHtml = `<span class="file-status status-missing">❌ Faltando: ${fname}</span>`;
             }
             
             // Insere logo após o input file
@@ -746,14 +722,14 @@
 
                 // --- LÓGICA UNIFICADA DE SOBRA DE TEMPO ---
                 if(!ignorarF) {
-                    // Calcula duração total do programa
+                    // Calcula duração total do programa atual
                     const durationMin = obterDuracaoTotalMinutos();
                     // Calcula tempo disponível ATÉ O FINAL
                     const availableMin = (dataFimGlobal - now) / 60000;
                     
                     const folga = Math.floor(availableMin - durationMin);
 
-                    // Se sobrar mais de 1 minuto
+                    // Se sobrar mais de 1 minuto, independente do horário de início
                     if(folga >= 1) {
                         surplusMinutes = folga;
                         
@@ -767,8 +743,9 @@
                     }
                 }
 
-                // Se não tem folga no teto, verifica se está apenas "Adiantado no Relógio"
+                // Se não tem folga no teto, verifica se está apenas "Adiantado no Relógio" (se início não ignorado)
                 if(!ignorarI && now < dIni && !document.getElementById('modal-surplus-check').style.display.includes('flex')) {
+                    // Configura pendência para modal de Early Start
                     pendingDataInicio = dIni;
                     document.getElementById('modal-early-start').style.display = 'flex';
                     return;
@@ -790,13 +767,17 @@
                 // Inserir Aguarde: Cria um target time AGORA + FOLGA
                 const now = new Date();
                 const targetWait = new Date(now.getTime() + (surplusMinutes * 60000));
+                
+                // Melhoria Visual: Mudar o título para mostrar que está em buffer
+                document.getElementById('titulo-fase').innerText = "AGUARDANDO / BUFFER";
                 iniciarEspera(targetWait);
             
             } else if (choice === 'distribute') {
+                // Abre menu de distribuição
                 document.getElementById('modal-surplus-dist').style.display = 'flex';
             
             } else {
-                // Iniciar Direto
+                // Iniciar Direto (ignora folga, termina cedo)
                 construirCronograma();
                 rodarSistema(new Date());
             }
@@ -1059,95 +1040,12 @@
         function abrirModal(){ document.getElementById('modal-decisao').style.display='flex'; }
         function sairIntervaloManual(){ if(calcularAjuste(new Date())){ document.getElementById('btn-intervalo-manual').classList.add('hidden'); document.getElementById('timer-principal').classList.remove('hidden'); rodarFase(indexAtual+1); }}
 
-        function playSmartAudio(config) {
-            if(activeAudio) fadeAndStop(activeAudio, config.fadeIn);
-            const audio = new Audio(config.src); audio.loop = config.loop; audio.volume = 0; 
-            audio.play().catch(e => console.log(e));
-            
-            audio.customFlags = { 
-                playThrough: config.playThrough, 
-                stopAtZero: config.stopAtZero,
-                continueNext: config.continueNext,
-                srcConfig: config 
-            };
-
-            let vol = 0; const fadeInTime = config.fadeIn * 1000; const stepTime = 50; const stepVol = 1 / (fadeInTime / stepTime);
-            const fadeInInterval = setInterval(() => { if(audio.volume < 1 - stepVol) audio.volume += stepVol; else { audio.volume = 1; clearInterval(fadeInInterval); } }, stepTime);
-            
-            if(config.duration > 0) {
-                const playTime = config.duration * 1000; const fadeOutTime = config.fadeOut * 1000;
-                setTimeout(() => { fadeAndStop({ el: audio }, config.fadeOut); }, playTime - fadeOutTime);
-            }
-            activeAudio = { el: audio };
-        }
-
-        function fadeAndStop(audioObj, durationSec) {
-            if(!audioObj || !audioObj.el) return;
-            const audio = audioObj.el; const fadeTime = (durationSec || 2) * 1000; const stepTime = 50; const startVol = audio.volume; const stepVol = startVol / (fadeTime / stepTime);
-            const fadeOutInterval = setInterval(() => { if(audio.volume > stepVol) audio.volume -= stepVol; else { audio.volume = 0; audio.pause(); clearInterval(fadeOutInterval); if(activeAudio === audioObj) activeAudio = null; } }, stepTime);
-        }
-
-        function resolverAudioPause(action) {
-            audioResumeAction = action; document.getElementById('modal-audio-pause').style.display = 'none';
-            if(!activeAudio) return;
-            if(action === 'pause') { activeAudio.el.pause(); } 
-            else if (action === 'restart') { activeAudio.el.pause(); activeAudio.el.currentTime = 0; } 
-            else if (action === 'stop') { fadeAndStop(activeAudio, 0.5); }
-        }
-
-        function acaoPausar(){ 
-            estado="PAUSADO"; clearInterval(intervaloTimer); 
-            if(activeAudio && !activeAudio.el.paused) { document.getElementById('modal-audio-pause').style.display = 'flex'; }
-            document.getElementById('timer-principal').style.opacity="0.5"; document.getElementById('display-screen').classList.remove('bg-panic'); document.getElementById('lbl-fim').style.animationPlayState = 'paused'; atualizarBotoes(false);
-        }
-
-        function acaoContinuar(){ 
-            if(estado==="PAUSADO"){ 
-                if(document.getElementById('titulo-fase').innerText.includes("AGUARDANDO")) { const hI = document.getElementById('hora-inicio').value; const dIni = montarData(hI, new Date()); iniciarEspera(dIni); document.getElementById('timer-principal').style.opacity="1"; atualizarBotoes(true); return; }
-                if(!document.getElementById('btn-intervalo-manual').classList.contains('hidden')) return; 
-                if(activeAudio) { if(audioResumeAction === 'pause') activeAudio.el.play(); else if(audioResumeAction === 'restart') activeAudio.el.play(); } audioResumeAction = null;
-                if(tempoRestante < 0 && (cronograma[indexAtual].permitirEstouro || indexAtual === cronograma.length-1)) { estado="RODANDO"; document.getElementById('timer-principal').style.opacity="1"; document.getElementById('lbl-fim').style.animationPlayState = 'running'; atualizarBotoes(true); intervaloTimer=setInterval(tickNegativo,1000); return; }
-                if(!calcularAjuste(new Date())) return; 
-                estado=emIntervalo?"INTERVALO":"RODANDO"; document.getElementById('timer-principal').style.opacity="1"; document.getElementById('lbl-fim').style.animationPlayState = 'running'; atualizarBotoes(true); intervaloTimer=setInterval(tick,1000); 
-            }
-        }
-        function acaoReiniciarFase(){ 
-            if(activeAudio) fadeAndStop(activeAudio, 1);
-            tempoRestante=cronograma[indexAtual].segundosFinais; 
-            document.getElementById('lbl-fim').classList.remove('ativo', 'anim-slow', 'anim-med', 'anim-fast', 'anim-panic'); document.getElementById('display-screen').classList.remove('bg-panic');
-            const el = document.getElementById('timer-principal'); el.classList.remove('piscando-vermelho', 'piscando-cor', 'piscando-alerta-maximo'); el.style.color = cronograma[indexAtual].txt;
-            if(calcularAjuste(new Date())){ const m=Math.floor(tempoRestante/60), s=tempoRestante%60; el.innerText=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; if(estado!=="RODANDO") acaoContinuar(); }
-        }
-        function acaoAvançar(){ 
-            if(estado === "WAITING" || document.getElementById('titulo-fase').innerText.includes("AGUARDANDO")) { document.getElementById('timer-principal').classList.remove('timer-waiting'); clearInterval(intervaloTimer); indexAtual = 0; rodarFase(0); } else { if(indexAtual < cronograma.length - 1) rodarFase(indexAtual + 1); }
-        }
-        function acaoAdicionarTempo() {
-            tempoRestante += 60; cronograma[indexAtual].segundosFinais += 60;
-            atualizarPrevisaoEntrega(); 
-            const el = document.getElementById('timer-principal'); const abs = Math.abs(tempoRestante); const m = Math.floor(abs / 60); const s = abs % 60; const sinal = tempoRestante < 0 ? "-" : ""; el.innerText = `${sinal}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-            if (calcularAjuste(new Date())) { if(tempoRestante > 0) { document.getElementById('lbl-fim').classList.remove('ativo'); document.getElementById('display-screen').classList.remove('bg-panic'); el.classList.remove('piscando-vermelho', 'piscando-alerta-maximo'); el.style.color = cronograma[indexAtual].txt; if(intervaloTimer) clearInterval(intervaloTimer); intervaloTimer = setInterval(tick, 1000); } }
-        }
-        function atualizarBotoes(rodando) { if(rodando) { document.getElementById('btn-pausar').classList.remove('hidden'); document.getElementById('btn-continuar').classList.add('hidden'); } else { document.getElementById('btn-pausar').classList.add('hidden'); document.getElementById('btn-continuar').classList.remove('hidden'); } }
-        function montarData(s,ref){ const [h,m]=s.split(':'); const d=new Date(ref); d.setHours(parseInt(h),parseInt(m),0,0); return d; }
-        function notificarAjuste(m){ const el=document.getElementById('txt-status'); el.innerText=m; el.style.color="#ffaa00"; }
-        function tocarBip(){ 
-            const globalAudio = document.getElementById('chk-audio-global').checked; const faseBeep = cronograma[indexAtual] ? cronograma[indexAtual].beep : false; if(!globalAudio || !faseBeep) return;
-            try{ const c=new(window.AudioContext||window.webkitAudioContext)(); const o=c.createOscillator(); o.type='sine'; o.frequency.value=880; o.connect(c.destination); o.start(); o.stop(c.currentTime+0.5); }catch(e){} 
-        }
-        function encerrar(){ 
-            if(intervaloTimer) clearInterval(intervaloTimer); if(activeAudio) fadeAndStop(activeAudio, 1);
-            document.getElementById('display-screen').style.display = 'none'; document.getElementById('config-screen').style.display = 'block'; 
-            const d=document.getElementById('display-screen'); d.style.background="#000"; d.style.backgroundImage='none'; d.classList.remove('bg-panic');
-            document.getElementById('titulo-fase').innerText="..."; document.getElementById('lbl-fim').classList.remove('ativo', 'anim-slow', 'anim-med', 'anim-fast', 'anim-panic');
-            document.getElementById('timer-principal').innerText="00:00"; document.getElementById('timer-principal').classList.remove('piscando-cor', 'piscando-vermelho', 'piscando-alerta-maximo');
-            document.getElementById('btn-intervalo-manual').classList.add('hidden'); document.getElementById('timer-principal').classList.remove('hidden');
-        }
-
         // --- INICIALIZAÇÃO SEGURA (NO FINAL) ---
         window.onload = function() {
             try {
                 document.getElementById('global-cor-titulo').addEventListener('input', e => document.getElementById('global-titulo').style.color = e.target.value);
                 
+                // Configuração Inicial de Data
                 const now = new Date(); 
                 const stdStart = new Date(now); stdStart.setHours(9,20,0,0);
                 let sVal="09:20", eVal="10:15";
@@ -1157,10 +1055,12 @@
                 }
                 document.getElementById('hora-inicio').value = sVal; document.getElementById('hora-fim').value = eVal;
                 
+                // Adicionar Fases Iniciais Padrão
                 adicionarFase("Confraternização", 10, true, "#ffcc00", "#ffffff");
                 adicionarFase("Missão", 15, true, "#28a745", "#ffffff");
                 adicionarFase("Estudo da Bíblia e Oração", 30, false, "#007bff", "#ffffff");
                 
+                // Relógio Real
                 setInterval(()=>{ document.getElementById('relogio-real').innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); },1000);
 
             } catch (err) {
