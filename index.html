@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Cronos v1.352 - Logic Complete</title>
+    <title>Cronos v1.353 - Stable</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         :root { --accent: #00d2ff; --bg: #121212; --panel: #1e1e1e; --text: #e0e0e0; --success: #28a745; --warning: #ffaa00; --danger: #ff4444; }
@@ -784,7 +784,8 @@
                     return;
                 }
 
-                if (!ignorarI && now > new Date(dIni.getTime() + 60000)) { 
+                // CHECK LATE START (Nova lógica corrigida: só checa se NÃO IGNORAR FIM)
+                if (!ignorarI && !ignorarF && now > new Date(dIni.getTime() + 60000)) { 
                     deficitSeconds = (now - dIni) / 1000;
                     document.getElementById('modal-late-start').style.display = 'flex';
                     return;
