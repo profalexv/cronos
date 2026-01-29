@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Cronos v1.354 - Media Fix</title>
+    <title>Cronos v1.353 - Stable</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         :root { --accent: #00d2ff; --bg: #121212; --panel: #1e1e1e; --text: #e0e0e0; --success: #28a745; --warning: #ffaa00; --danger: #ff4444; }
@@ -52,7 +52,7 @@
         .audio-slot label { font-size: 0.7rem; color: #888; margin-bottom: 2px; }
         .audio-slot input[type="number"] { width: 50px; padding: 5px; font-size: 0.9rem; background: #333; border: 1px solid #555; }
         
-        .file-status { font-size: 0.75rem; margin-top: 4px; display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.3); padding: 3px 6px; border-radius: 3px; border: 1px solid #333; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+        .file-status { font-size: 0.75rem; margin-top: 4px; display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.3); padding: 3px 6px; border-radius: 3px; border: 1px solid #333; }
         .status-ok { color: var(--success); border-left: 3px solid var(--success); }
         .status-missing { color: var(--danger); border-left: 3px solid var(--danger); }
         
@@ -457,25 +457,15 @@
         }
 
         function verificarStatusMidia(slot) {
-            // Verifica se é slot de áudio ou slot de imagem principal
-            const isImageSlot = slot.classList.contains('fase-row');
             const label = slot.querySelector('.file-status');
-            const fname = isImageSlot ? slot.dataset.imgname : slot.dataset.filename;
-            
+            const fname = slot.dataset.filename;
             if (label) label.remove();
             if (!fname) return;
-            
             let statusHtml = '';
             if (mediaCache[fname]) statusHtml = `<span class="file-status status-ok">✅ Encontrado: ${fname}</span>`;
             else statusHtml = `<span class="file-status status-missing">❌ Faltando: ${fname}</span>`;
-            
-            if (isImageSlot) {
-                const imgInput = slot.querySelector('.inp-img');
-                if (imgInput) imgInput.insertAdjacentHTML('afterend', statusHtml);
-            } else {
-                const fileInput = slot.querySelector('.aud-file');
-                if (fileInput) fileInput.insertAdjacentHTML('afterend', statusHtml);
-            }
+            const fileInput = slot.querySelector('.aud-file');
+            if (fileInput) fileInput.insertAdjacentHTML('afterend', statusHtml);
         }
 
         function resolveMissingMedia() {
@@ -489,10 +479,7 @@
                 for (let file of input.files) { mediaCache[file.name] = file; count++; }
             }
             alert(`${count} arquivos mapeados!`);
-            // Refresh Audio Slots
             document.querySelectorAll('.audio-slot').forEach(slot => verificarStatusMidia(slot));
-            // Refresh Image Slots
-            document.querySelectorAll('.fase-row').forEach(row => verificarStatusMidia(row));
         }
 
         // --- 4. FUNÇÕES DOM ---
@@ -521,7 +508,7 @@
             if (div.closest('.fase-wrapper')) recalcularOpcoesAudio(div.closest('.fase-wrapper'));
         }
 
-        function adicionarFase(tit="", min=10, flex=true, bg="#000000", txt="#ffffff", imgName="") {
+        function adicionarFase(tit="", min=10, flex=true, bg="#000000", txt="#ffffff") {
             const c = document.getElementById('lista-fases');
             const hideInt = document.getElementById('chk-intervalos').checked ? '' : 'hidden';
             const hideEst = document.getElementById('chk-estouro-global').checked ? '' : 'hidden';
@@ -530,8 +517,6 @@
             wrapper.className = 'fase-wrapper';
             const div = document.createElement('div');
             div.className = 'fase-row';
-            if(imgName) div.dataset.imgname = imgName;
-
             div.innerHTML = `
                 <button class="btn-x" onclick="this.closest('.fase-wrapper').remove()">X</button>
                 <div class="campo" style="flex:2; min-width:150px;"><label>Título</label><input type="text" class="inp-titulo" value="${tit}"></div>
@@ -543,16 +528,13 @@
                 <div class="campo" style="width:60px;"><label>Aviso</label><input type="number" class="inp-aviso" value="30"></div>
                 <div class="campo" data-tooltip="Cor Fundo"><label>Bg</label><input type="color" class="inp-bg" value="${bg}"></div>
                 <div class="campo" data-tooltip="Cor Texto"><label>Txt</label><input type="color" class="inp-txt" value="${txt}"></div>
-                <div class="campo" style="flex:1;"><label>Img</label><input type="file" class="inp-img" accept="image/*" onchange="this.closest('.fase-row').dataset.imgname = this.files[0].name; verificarStatusMidia(this.closest('.fase-row'))"></div>
+                <div class="campo" style="flex:1;"><label>Img</label><input type="file" class="inp-img" accept="image/*"></div>
                 <button class="btn-icon btn-show-audio ${hideAud}" onclick="this.closest('.fase-wrapper').querySelector('.audio-panel').classList.toggle('open')">🎵</button>
             `;
             const audioPanel = document.createElement('div');
             audioPanel.className = 'audio-panel';
             audioPanel.innerHTML = `<div style="font-size:0.8rem; color:#aaa; margin-bottom:5px;">Configuração de Áudio Avançada</div><div class="audio-list"></div><button class="btn-add" style="padding:5px 10px; font-size:0.8rem;" onclick="adicionarSlotAudio(this.parentElement)">+ Novo Áudio</button>`;
             wrapper.appendChild(div); wrapper.appendChild(audioPanel); c.appendChild(wrapper); uiAtualizarFase(div);
-            
-            // Check status immediately
-            verificarStatusMidia(div);
             return wrapper;
         }
 
@@ -671,22 +653,13 @@
                         fileName: fName
                     });
                 });
-                
-                // SAVE IMAGE FILENAME
-                let imgName = row.dataset.imgname || "";
-                const imgInput = row.querySelector('.inp-img');
-                if(imgInput && imgInput.files.length > 0) {
-                    imgName = imgInput.files[0].name;
-                }
-
                 dados.fases.push({
                     titulo: row.querySelector('.inp-titulo').value, minutos: row.querySelector('.inp-tempo').value, 
                     flexivel: row.querySelector('.inp-flexivel').checked,
                     intTempo: row.querySelector('.inp-int-tempo').value, intManual: row.querySelector('.inp-int-manual').checked, 
                     estouroFase: row.querySelector('.inp-estouro-fase').checked, beepFase: row.querySelector('.inp-beep-fase').checked,
                     aviso: row.querySelector('.inp-aviso').value, bg: row.querySelector('.inp-bg').value, txt: row.querySelector('.inp-txt').value,
-                    customAudioTimes: customAudios,
-                    imgName: imgName
+                    customAudioTimes: customAudios
                 });
             });
             return dados;
@@ -742,11 +715,7 @@
             if (d.fases && d.fases.length > 0) {
                 d.fases.forEach(f => {
                     const isFlex = (f.flexivel !== undefined) ? f.flexivel : (f.redutivel || false);
-                    
-                    // LOAD IMAGE FILENAME
-                    if (f.imgName) usesMedia = true;
-
-                    const divWrapper = adicionarFase(f.titulo, f.minutos, isFlex, f.bg, f.txt, f.imgName || "");
+                    const divWrapper = adicionarFase(f.titulo, f.minutos, isFlex, f.bg, f.txt);
                     const row = divWrapper.querySelector('.fase-row');
                     row.querySelector('.inp-int-tempo').value = f.intTempo || 0; 
                     row.querySelector('.inp-int-manual').checked = f.intManual || false; 
@@ -765,6 +734,8 @@
                 
                 if (usesMedia && Object.keys(mediaCache).length === 0) {
                      document.getElementById('modal-missing-media').style.display = 'flex';
+                } else if (Object.keys(mediaCache).length > 0) {
+                    document.querySelectorAll('.audio-slot').forEach(slot => verificarStatusMidia(slot));
                 }
             }
         }
@@ -813,7 +784,7 @@
                     return;
                 }
 
-                // CHECK LATE START (Lógica Corrigida: Só se NÃO IGNORAR FIM)
+                // CHECK LATE START (Nova lógica corrigida: só checa se NÃO IGNORAR FIM)
                 if (!ignorarI && !ignorarF && now > new Date(dIni.getTime() + 60000)) { 
                     deficitSeconds = (now - dIni) / 1000;
                     document.getElementById('modal-late-start').style.display = 'flex';
@@ -931,18 +902,9 @@
                 const img = row.querySelector('.inp-img'); 
                 let url = "";
                 
-                // Prioridade 1: Arquivo recém selecionado no input
                 if (img.files[0]) {
                     url = URL.createObjectURL(img.files[0]);
-                } else {
-                    // Prioridade 2: Nome do arquivo salvo no dataset (via JSON)
-                    const savedImgName = row.dataset.imgname;
-                    if(savedImgName && mediaCache[savedImgName]) {
-                        url = URL.createObjectURL(mediaCache[savedImgName]);
-                    } else if (savedImgName) {
-                        missingMedia.push(savedImgName);
-                    }
-                }
+                } 
                 
                 const customAudios = [];
                 wrap.querySelectorAll('.audio-slot').forEach(slot => {
@@ -982,7 +944,7 @@
             if (cronograma.length > 0) cronograma[cronograma.length-1].permitirEstouro = true;
             
             if(missingMedia.length > 0) {
-                alert(`⚠️ ATENÇÃO: ${missingMedia.length} arquivos de mídia não encontrados na pasta cache. Verifique os indicadores vermelhos.`);
+                alert(`⚠️ ATENÇÃO: ${missingMedia.length} arquivos de mídia configurados não foram encontrados na pasta de cache selecionada. Verifique os slots em vermelho.`);
             }
         }
 
