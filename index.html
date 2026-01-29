@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Cronos v1.349 - Flow Fix</title>
+    <title>Cronos v1.350 - Smart Flow</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         :root { --accent: #00d2ff; --bg: #121212; --panel: #1e1e1e; --text: #e0e0e0; --success: #28a745; --warning: #ffaa00; --danger: #ff4444; }
@@ -146,7 +146,7 @@
                 <button class="btn-file btn-folder" onclick="document.getElementById('folder-input').click()" data-tooltip="PASSO 1: Selecione a pasta onde estão seus arquivos de áudio/imagem.">📂 Pasta Mídia (Cache)</button>
                 <a href="manual.html" target="_blank" class="btn-file" data-tooltip="Ver Manual de Uso">❓ Manual</a>
                 <button class="btn-file" onclick="acaoSalvar()" data-tooltip="Salvar a programação (JSON).">💾 Salvar</button>
-                <button class="btn-file" onclick="acaoAbrir()" data-tooltip="Carregar arquivo JSON.">📂 Abrir</button>
+                <button class="btn-file" onclick="document.getElementById('file-input').click()" data-tooltip="Carregar arquivo JSON.">📂 Abrir</button>
             </div>
         </div>
         
@@ -291,21 +291,18 @@
         </div>
     </div>
 
-    <div id="modal-open-options" class="modal-base">
-        <div class="modal-box" style="border-color: var(--accent);">
-            <h2 style="color: var(--accent); margin-top:0;">📂 Abrir Programação</h2>
-            <p>Nenhuma pasta de mídia foi carregada em cache ainda.</p>
-            <p style="font-size:0.9rem; color:#aaa;">Sem a pasta de mídia, imagens e áudios podem não funcionar.</p>
+    <div id="modal-missing-media" class="modal-base">
+        <div class="modal-box" style="border-color: var(--warning);">
+            <h2 style="color: var(--warning); margin-top:0;">📂 Pasta de Mídia Necessária</h2>
+            <p>Este arquivo contém referências a imagens ou áudios, mas a pasta de mídia ainda não foi selecionada.</p>
+            <p style="font-size:0.9rem; color:#aaa;">Por limitações de segurança do navegador, você precisa indicar manualmente onde estão os arquivos.</p>
             
             <div class="modal-opts">
-                <button class="btn-modal" style="background: var(--success); color:white;" onclick="triggerPastaMidia()">
-                    <b>📁 Escolher Pasta de Mídia</b> <span>(Recomendado)</span>
+                <button class="btn-modal" style="background: var(--success); color:white;" onclick="resolveMissingMedia()">
+                    <b>📁 Selecionar Pasta de Mídia</b> <span>(Recomendado)</span>
                 </button>
-                <button class="btn-modal" style="background: #444;" onclick="triggerArquivoJson()">
-                    <b>📄 Procurar Arquivo JSON</b> <span>(Apenas Texto)</span>
-                </button>
-                <button class="btn-modal" style="background: var(--danger); justify-content:center;" onclick="document.getElementById('modal-open-options').style.display='none'">
-                    <b>CANCELAR</b>
+                <button class="btn-modal" style="background: #444;" onclick="document.getElementById('modal-missing-media').style.display='none'">
+                    <b>Ignorar</b> <span>(Sem mídia)</span>
                 </button>
             </div>
         </div>
@@ -325,9 +322,8 @@
         let audioResumeAction = null;
         let surplusMinutes = 0;
         let pendingDataInicio = null;
-        let wakeLock = null; // API de Wake Lock
-        let audioCtxGlobal = null; // Singleton para AudioContext
-        let pendingJsonLoad = false; // Flag para carregar JSON após pasta
+        let wakeLock = null; 
+        let audioCtxGlobal = null; 
 
         // --- 2. FUNÇÕES AUXILIARES ---
         function montarData(s, ref) {
@@ -341,7 +337,6 @@
             return String(date.getHours()).padStart(2,'0') + ":" + String(date.getMinutes()).padStart(2,'0');
         }
 
-        // Singleton Audio Context (Correção de Bug de Memória/Limite)
         function getAudioContext() {
             if (!audioCtxGlobal) {
                 audioCtxGlobal = new (window.AudioContext || window.webkitAudioContext)();
@@ -449,20 +444,21 @@
             if (fileInput) fileInput.insertAdjacentHTML('afterend', statusHtml);
         }
 
+        function resolveMissingMedia() {
+            document.getElementById('modal-missing-media').style.display = 'none';
+            document.getElementById('folder-input').click();
+        }
+
         function processarPastaTrabalho(input) {
-            // mediaCache = {}; // Não limpamos para permitir updates incrementais se necessário
             let count = 0;
             if (input.files) {
                 for (let file of input.files) { mediaCache[file.name] = file; count++; }
             }
-            alert(`${count} arquivos mapeados! O sistema usará estes arquivos quando o cronograma solicitar pelo nome.`);
+            alert(`${count} arquivos mapeados!`);
+            // Atualiza toda a UI (que estava vermelha) com os novos arquivos
             document.querySelectorAll('.audio-slot').forEach(slot => verificarStatusMidia(slot));
-
-            // AUTO-TRIGGER JSON LOAD
-            if (pendingJsonLoad) {
-                pendingJsonLoad = false;
-                setTimeout(() => { document.getElementById('file-input').click(); }, 300);
-            }
+            // Re-renderizar as imagens que estavam quebradas
+            const evt = new Event('change'); // Hack para disparar update se necessário, mas melhor apenas chamar constroi se for rodar
         }
 
         // --- 4. FUNÇÕES DOM ---
@@ -500,7 +496,6 @@
             wrapper.className = 'fase-wrapper';
             const div = document.createElement('div');
             div.className = 'fase-row';
-            // FLEXÍVEL
             div.innerHTML = `
                 <button class="btn-x" onclick="this.closest('.fase-wrapper').remove()">X</button>
                 <div class="campo" style="flex:2; min-width:150px;"><label>Título</label><input type="text" class="inp-titulo" value="${tit}"></div>
@@ -582,7 +577,6 @@
                 const globalInt = document.getElementById('chk-intervalos').checked;
                 rows.forEach((r, idx) => {
                     const m = parseFloat(r.querySelector('.inp-tempo').value) || 0;
-                    // Lógica Flexivel
                     const isFlex = rows.length === 1 || r.querySelector('.inp-flexivel').checked;
                     if(isFlex) tempoFlexTotal += m; else tempoFixo += m;
                     if(globalInt && idx < rows.length - 1) { tempoFixo += (parseInt(r.querySelector('.inp-int-tempo').value) || 0) / 60; }
@@ -603,24 +597,9 @@
             }
         }
 
-        // --- 6. SALVAR E CARREGAR (NOVO FLUXO) ---
+        // --- 6. SALVAR E CARREGAR (FLUXO INTELIGENTE) ---
 
         function acaoAbrir() {
-            if (Object.keys(mediaCache).length > 0) {
-                document.getElementById('file-input').click();
-            } else {
-                document.getElementById('modal-open-options').style.display = 'flex';
-            }
-        }
-
-        function triggerPastaMidia() {
-            document.getElementById('modal-open-options').style.display = 'none';
-            pendingJsonLoad = true; // Marca para carregar JSON logo após
-            document.getElementById('folder-input').click();
-        }
-
-        function triggerArquivoJson() {
-            document.getElementById('modal-open-options').style.display = 'none';
             document.getElementById('file-input').click();
         }
 
@@ -713,6 +692,7 @@
             document.getElementById('chk-estouro-global').checked = d.estouroGlobal || false; toggleEstouroGlobal();
             document.getElementById('chk-audio-global').checked = d.audioGlobal || false; toggleAudioGlobal();
             document.getElementById('lista-fases').innerHTML = "";
+            let usesMedia = false; // Detecção de uso de mídia
             if (d.fases && d.fases.length > 0) {
                 d.fases.forEach(f => {
                     const isFlex = (f.flexivel !== undefined) ? f.flexivel : (f.redutivel || false);
@@ -724,6 +704,7 @@
                     row.querySelector('.inp-beep-fase').checked = (f.beepFase !== undefined) ? f.beepFase : true;
                     row.querySelector('.inp-aviso').value = f.aviso || 30; 
                     if (f.customAudioTimes && f.customAudioTimes.length > 0) {
+                        usesMedia = true;
                         const painel = divWrapper.querySelector('.audio-panel'); painel.classList.add('open');
                         f.customAudioTimes.forEach(t => {
                             adicionarSlotAudio(painel, t.min, t.sec, t.dur, t.loop, t.fin, t.fout, t.fileName, t.playThrough, t.stopAtZero, t.continueNext);
@@ -731,8 +712,14 @@
                     }
                     uiAtualizarFase(row); 
                 });
-                alert("Configuração carregada!");
-                if (Object.keys(mediaCache).length > 0) document.querySelectorAll('.audio-slot').forEach(slot => verificarStatusMidia(slot));
+                
+                // LÓGICA DE DETECÇÃO DE MÍDIA FALTANTE
+                // Se o JSON pede mídia E o cache está vazio, pede a pasta.
+                if (usesMedia && Object.keys(mediaCache).length === 0) {
+                     document.getElementById('modal-missing-media').style.display = 'flex';
+                } else if (Object.keys(mediaCache).length > 0) {
+                    document.querySelectorAll('.audio-slot').forEach(slot => verificarStatusMidia(slot));
+                }
             }
         }
 
