@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Cronos v1.347 - Flex Stable</title>
+    <title>Cronos v1.348 - Final Flex</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         :root { --accent: #00d2ff; --bg: #121212; --panel: #1e1e1e; --text: #e0e0e0; --success: #28a745; --warning: #ffaa00; --danger: #ff4444; }
@@ -145,8 +145,8 @@
             <div style="display:flex; gap:10px;">
                 <button class="btn-file btn-folder" onclick="document.getElementById('folder-input').click()" data-tooltip="PASSO 1: Selecione a pasta onde estão seus arquivos de áudio/imagem.">📂 Pasta Mídia (Cache)</button>
                 <a href="manual.html" target="_blank" class="btn-file" data-tooltip="Ver Manual de Uso">❓ Manual</a>
-                <button class="btn-file" onclick="salvarConfiguracao()" data-tooltip="Salvar a programação (JSON).">💾 Salvar</button>
-                <button class="btn-file" onclick="document.getElementById('file-input').click()" data-tooltip="Carregar arquivo JSON.">📂 Abrir</button>
+                <button class="btn-file" onclick="acaoSalvar()" data-tooltip="Salvar a programação (JSON).">💾 Salvar</button>
+                <button class="btn-file" onclick="acaoAbrir()" data-tooltip="Carregar arquivo JSON.">📂 Abrir</button>
             </div>
         </div>
         
@@ -291,6 +291,26 @@
         </div>
     </div>
 
+    <div id="modal-open-options" class="modal-base">
+        <div class="modal-box" style="border-color: var(--accent);">
+            <h2 style="color: var(--accent); margin-top:0;">📂 Abrir Programação</h2>
+            <p>Nenhuma pasta de mídia foi carregada em cache ainda.</p>
+            <p style="font-size:0.9rem; color:#aaa;">Sem a pasta de mídia, imagens e áudios podem não funcionar.</p>
+            
+            <div class="modal-opts">
+                <button class="btn-modal" style="background: var(--success); color:white;" onclick="triggerPastaMidia()">
+                    <b>📁 Escolher Pasta de Mídia</b> <span>(Recomendado)</span>
+                </button>
+                <button class="btn-modal" style="background: #444;" onclick="triggerArquivoJson()">
+                    <b>📄 Procurar Arquivo JSON</b> <span>(Apenas Texto)</span>
+                </button>
+                <button class="btn-modal" style="background: var(--danger); justify-content:center;" onclick="document.getElementById('modal-open-options').style.display='none'">
+                    <b>CANCELAR</b>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- 1. VARIÁVEIS GLOBAIS ---
         let mediaCache = {}; 
@@ -429,7 +449,7 @@
         }
 
         function processarPastaTrabalho(input) {
-            // mediaCache = {}; // Não limpamos para permitir updates incrementais se necessário, mas ideal é substituir
+            // mediaCache = {}; // Não limpamos para permitir updates incrementais se necessário
             let count = 0;
             if (input.files) {
                 for (let file of input.files) { mediaCache[file.name] = file; count++; }
@@ -473,7 +493,7 @@
             wrapper.className = 'fase-wrapper';
             const div = document.createElement('div');
             div.className = 'fase-row';
-            // SUBSTITUIÇÃO: inp-redutivel -> inp-flexivel e Label "Redut?" -> "Flex?"
+            // FLEXÍVEL
             div.innerHTML = `
                 <button class="btn-x" onclick="this.closest('.fase-wrapper').remove()">X</button>
                 <div class="campo" style="flex:2; min-width:150px;"><label>Título</label><input type="text" class="inp-titulo" value="${tit}"></div>
@@ -576,53 +596,93 @@
             }
         }
 
-        // --- 6. SALVAR E CARREGAR ---
-        function salvarConfiguracao() {
-            try {
-                const titulo = document.getElementById('global-titulo').value || "Cronograma";
-                const nomeArquivo = titulo.replace(/[^a-z0-9]/gi, '_').toLowerCase() + ".json";
-                const dados = { 
-                    tituloGlobal: titulo, corGlobal: document.getElementById('global-cor-titulo').value,
-                    exibirTitulo: document.getElementById('chk-exibir-titulo').checked,
-                    inicio: document.getElementById('hora-inicio').value, fim: document.getElementById('hora-fim').value, 
-                    ignorarInicio: document.getElementById('chk-ignorar-inicio').checked,
-                    ignorarFim: document.getElementById('chk-ignorar-fim').checked,
-                    intervalosAtivos: document.getElementById('chk-intervalos').checked,
-                    estouroGlobal: document.getElementById('chk-estouro-global').checked,
-                    audioGlobal: document.getElementById('chk-audio-global').checked,
-                    fases: [] 
-                };
-                document.querySelectorAll('.fase-wrapper').forEach(wrap => {
-                    const row = wrap.querySelector('.fase-row');
-                    const customAudios = [];
-                    wrap.querySelectorAll('.audio-slot').forEach(slot => {
-                        const fileIn = slot.querySelector('.aud-file');
-                        let fName = slot.dataset.filename || ""; 
-                        if (fileIn.files.length > 0) fName = fileIn.files[0].name;
-                        customAudios.push({
-                            min: slot.querySelector('.aud-min').value, sec: slot.querySelector('.aud-sec').value,
-                            dur: slot.querySelector('.aud-dur').value, loop: slot.querySelector('.aud-loop').checked,
-                            fin: slot.querySelector('.aud-fin').value, fout: slot.querySelector('.aud-fout').value,
-                            playThrough: slot.querySelector('.aud-playthrough').checked,
-                            stopAtZero: slot.querySelector('.aud-stopzero').checked,
-                            continueNext: slot.querySelector('.aud-continue').checked,
-                            fileName: fName
-                        });
-                    });
-                    // SUBSTITUIÇÃO: redutivel -> flexivel
-                    dados.fases.push({
-                        titulo: row.querySelector('.inp-titulo').value, minutos: row.querySelector('.inp-tempo').value, 
-                        flexivel: row.querySelector('.inp-flexivel').checked,
-                        intTempo: row.querySelector('.inp-int-tempo').value, intManual: row.querySelector('.inp-int-manual').checked, 
-                        estouroFase: row.querySelector('.inp-estouro-fase').checked, beepFase: row.querySelector('.inp-beep-fase').checked,
-                        aviso: row.querySelector('.inp-aviso').value, bg: row.querySelector('.inp-bg').value, txt: row.querySelector('.inp-txt').value,
-                        customAudioTimes: customAudios
+        // --- 6. SALVAR E CARREGAR (NOVO FLUXO) ---
+
+        function acaoAbrir() {
+            if (Object.keys(mediaCache).length > 0) {
+                document.getElementById('file-input').click();
+            } else {
+                document.getElementById('modal-open-options').style.display = 'flex';
+            }
+        }
+
+        function triggerPastaMidia() {
+            document.getElementById('modal-open-options').style.display = 'none';
+            document.getElementById('folder-input').click();
+        }
+
+        function triggerArquivoJson() {
+            document.getElementById('modal-open-options').style.display = 'none';
+            document.getElementById('file-input').click();
+        }
+
+        function gerarObjetoDados() {
+             const dados = { 
+                tituloGlobal: document.getElementById('global-titulo').value || "Cronograma",
+                corGlobal: document.getElementById('global-cor-titulo').value,
+                exibirTitulo: document.getElementById('chk-exibir-titulo').checked,
+                inicio: document.getElementById('hora-inicio').value, 
+                fim: document.getElementById('hora-fim').value, 
+                ignorarInicio: document.getElementById('chk-ignorar-inicio').checked,
+                ignorarFim: document.getElementById('chk-ignorar-fim').checked,
+                intervalosAtivos: document.getElementById('chk-intervalos').checked,
+                estouroGlobal: document.getElementById('chk-estouro-global').checked,
+                audioGlobal: document.getElementById('chk-audio-global').checked,
+                fases: [] 
+            };
+            document.querySelectorAll('.fase-wrapper').forEach(wrap => {
+                const row = wrap.querySelector('.fase-row');
+                const customAudios = [];
+                wrap.querySelectorAll('.audio-slot').forEach(slot => {
+                    const fileIn = slot.querySelector('.aud-file');
+                    let fName = slot.dataset.filename || ""; 
+                    if (fileIn.files.length > 0) fName = fileIn.files[0].name;
+                    customAudios.push({
+                        min: slot.querySelector('.aud-min').value, sec: slot.querySelector('.aud-sec').value,
+                        dur: slot.querySelector('.aud-dur').value, loop: slot.querySelector('.aud-loop').checked,
+                        fin: slot.querySelector('.aud-fin').value, fout: slot.querySelector('.aud-fout').value,
+                        playThrough: slot.querySelector('.aud-playthrough').checked,
+                        stopAtZero: slot.querySelector('.aud-stopzero').checked,
+                        continueNext: slot.querySelector('.aud-continue').checked,
+                        fileName: fName
                     });
                 });
-                const blob = new Blob([JSON.stringify(dados, null, 2)], { type: "application/json" });
-                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nomeArquivo;
-                document.body.appendChild(a); a.click(); document.body.removeChild(a);
-            } catch(e) { alert("Erro ao salvar: " + e.message); console.error(e); }
+                dados.fases.push({
+                    titulo: row.querySelector('.inp-titulo').value, minutos: row.querySelector('.inp-tempo').value, 
+                    flexivel: row.querySelector('.inp-flexivel').checked,
+                    intTempo: row.querySelector('.inp-int-tempo').value, intManual: row.querySelector('.inp-int-manual').checked, 
+                    estouroFase: row.querySelector('.inp-estouro-fase').checked, beepFase: row.querySelector('.inp-beep-fase').checked,
+                    aviso: row.querySelector('.inp-aviso').value, bg: row.querySelector('.inp-bg').value, txt: row.querySelector('.inp-txt').value,
+                    customAudioTimes: customAudios
+                });
+            });
+            return dados;
+        }
+
+        async function acaoSalvar() {
+            const titulo = document.getElementById('global-titulo').value || "Cronograma";
+            const nomeArquivo = titulo.replace(/[^a-z0-9]/gi, '_').toLowerCase() + ".json";
+            const dados = gerarObjetoDados();
+            const conteudoTexto = JSON.stringify(dados, null, 2);
+
+            if ('showSaveFilePicker' in window) {
+                try {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: nomeArquivo,
+                        types: [{ description: 'Arquivo JSON Cronos', accept: { 'application/json': ['.json'] }, }],
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(conteudoTexto);
+                    await writable.close();
+                    return; 
+                } catch (err) {
+                    if (err.name !== 'AbortError') console.error('Fallback save:', err); else return;
+                }
+            }
+
+            const blob = new Blob([conteudoTexto], { type: "application/json" });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nomeArquivo;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
         }
 
         function carregarArquivo(input) {
@@ -647,7 +707,6 @@
             document.getElementById('lista-fases').innerHTML = "";
             if (d.fases && d.fases.length > 0) {
                 d.fases.forEach(f => {
-                    // Compatibilidade: Se vier "redutivel" de JSON antigo, converte para flexivel
                     const isFlex = (f.flexivel !== undefined) ? f.flexivel : (f.redutivel || false);
                     const divWrapper = adicionarFase(f.titulo, f.minutos, isFlex, f.bg, f.txt);
                     const row = divWrapper.querySelector('.fase-row');
@@ -689,7 +748,6 @@
                     if (dataFimGlobal < dIni) dataFimGlobal.setDate(dataFimGlobal.getDate()+1);
                 } else { dataFimGlobal = null; }
 
-                // Check surplus
                 if (!ignorarF) {
                     const durationMin = obterDuracaoTotalMinutos();
                     const availableMin = (dataFimGlobal - now) / 60000;
@@ -773,7 +831,6 @@
                 const img = row.querySelector('.inp-img'); 
                 let url = "";
                 
-                // Prioridade 1: Arquivo recém selecionado no input
                 if (img.files[0]) {
                     url = URL.createObjectURL(img.files[0]);
                 } 
@@ -803,7 +860,6 @@
                     }
                 });
                 
-                // SUBSTITUIÇÃO: redutivel -> flexivel
                 cronograma.push({
                     titulo: row.querySelector('.inp-titulo').value, minutosOrig: parseFloat(row.querySelector('.inp-tempo').value),
                     segundosFinais: parseFloat(row.querySelector('.inp-tempo').value)*60, 
@@ -872,9 +928,8 @@
             if (!aud.src) return;
             const ctx = getAudioContext();
             const audio = new Audio(aud.src);
-            audio.customFlags = aud; // Anexa flags para controle posterior
+            audio.customFlags = aud; 
             
-            // Gain Node para Fade In
             const source = ctx.createMediaElementSource(audio);
             const gainNode = ctx.createGain();
             source.connect(gainNode);
@@ -882,14 +937,11 @@
 
             audio.play().then(() => {
                 activeAudio = { el: audio, gain: gainNode };
-                // Fade In
                 if (aud.fadeIn > 0) {
                     gainNode.gain.setValueAtTime(0, ctx.currentTime);
                     gainNode.gain.linearRampToValueAtTime(1, ctx.currentTime + aud.fadeIn);
                 }
-                // Loop
                 if (aud.loop) audio.loop = true;
-                // Duration limit
                 if (aud.duration > 0) {
                     setTimeout(() => fadeAndStop(activeAudio, aud.fadeOut || 2), (aud.duration * 1000) - ((aud.fadeOut||0)*1000));
                 }
@@ -904,7 +956,6 @@
             const startVol = audio.volume;
             const stepVol = startVol / (fadeTime / stepTime);
             
-            // Fallback manual fade se WebAudio não estiver perfeito, mas preferimos GainNode se disponível
             const fadeOutInterval = setInterval(() => {
                 if (audio.volume > stepVol) audio.volume -= stepVol;
                 else { 
@@ -1021,7 +1072,6 @@
 
         function resolverConflito(opt) {
             document.getElementById('modal-decisao').style.display = 'none';
-            // SUBSTITUIÇÃO: redutivel -> flexivel
             if (opt === 1) { for (let i = indexAtual; i < cronograma.length; i++) cronograma[i].flexivel = true; if (calcularAjuste(new Date())) acaoContinuar(); }
             if (opt === 2) { for (let i = indexAtual; i < cronograma.length - 1; i++) cronograma[i].flexivel = false; cronograma[cronograma.length - 1].flexivel = true; if (calcularAjuste(new Date())) acaoContinuar(); }
             if (opt === 3) { notificarAjuste("⚠️ Prazo Ignorado"); dataFimGlobal = null; if (!document.getElementById('btn-intervalo-manual').classList.contains('hidden')) sairIntervaloManual(); else acaoContinuar(); }
@@ -1037,7 +1087,6 @@
             for (let i = indexAtual + 1; i < cronograma.length; i++) nec += cronograma[i].segundosFinais;
             if (nec <= disp + 5) return true;
             let pool = 0, idxs = [];
-            // SUBSTITUIÇÃO: redutivel -> flexivel
             if (cronograma[indexAtual].flexivel && (estado === "RODANDO" || estado === "PAUSADO")) { pool += tempoRestante; idxs.push(indexAtual); }
             for (let i = indexAtual + 1; i < cronograma.length; i++) { if (cronograma[i].flexivel) { pool += cronograma[i].minutosOrig * 60; idxs.push(i); } }
             let fixo = nec - pool, sobra = disp - fixo;
@@ -1057,7 +1106,7 @@
             const faseBeep = cronograma[indexAtual] ? cronograma[indexAtual].beep : false; 
             if (!globalAudio || !faseBeep) return; 
             try { 
-                const c = getAudioContext(); // Singleton
+                const c = getAudioContext(); 
                 const o = c.createOscillator(); 
                 const g = c.createGain();
                 o.type = 'sine'; o.frequency.value = 880; 
@@ -1137,7 +1186,6 @@
             document.getElementById('txt-status').style.color = f.txt; const p = document.getElementById('txt-proximo'); p.style.color = f.txt; p.innerText = `Próximo: ${(indexAtual + 1 < cronograma.length) ? cronograma[indexAtual + 1].titulo : "Fim"}`;
         }
 
-        // --- 8. INICIALIZAÇÃO SEGURA ---
         window.onload = function() {
             try {
                 document.getElementById('global-cor-titulo').addEventListener('input', e => document.getElementById('global-titulo').style.color = e.target.value);
@@ -1153,7 +1201,6 @@
                 document.getElementById('hora-inicio').value = sVal;
                 document.getElementById('hora-fim').value = eVal;
                 
-                // Exemplo Inicial
                 adicionarFase("Abertura", 10, true, "#ffcc00", "#ffffff");
                 adicionarFase("Palestra Principal", 30, false, "#007bff", "#ffffff");
                 
