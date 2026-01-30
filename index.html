@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Cronos v1.356 - Logic Refined</title>
+    <title>Cronos v1.357 - Streamlined</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         :root { --accent: #00d2ff; --bg: #121212; --panel: #1e1e1e; --text: #e0e0e0; --success: #28a745; --warning: #ffaa00; --danger: #ff4444; }
@@ -256,26 +256,14 @@
         </div>
     </div>
 
-    <div id="modal-surplus-check" class="modal-base">
-        <div class="modal-box" style="border-color:#00d2ff;">
-            <h2 style="color:#00d2ff; margin-top:0;">⏳ Tempo de Sobra Detectado</h2>
-            <p>Há uma folga de <b><span id="surplus-display-val"></span> minutos</b> até o limite final.</p>
+    <div id="modal-late-start" class="modal-base">
+        <div class="modal-box" style="border-color:#ff4444;">
+            <h2 style="color:#ff4444; margin-top:0;">⚠️ Tempo Insuficiente</h2>
+            <p>Não há tempo suficiente até o horário final.</p>
             <div class="modal-opts">
-                <button class="btn-modal" style="background:#444;" onclick="handleSurplusDecision('wait')"><b>⏳ INSERIR AGUARDE</b> (Queimar Tempo)</button>
-                <button class="btn-modal" style="background:#28a745; color:white;" onclick="handleSurplusDecision('distribute')"><b>🎁 DISTRIBUIR NAS FASES</b></button>
-                <button class="btn-modal" style="background:#007bff; color:white;" onclick="handleSurplusDecision('start')"><b>▶ INICIAR DIRETO</b> (Terminar Cedo)</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="modal-surplus-dist" class="modal-base">
-        <div class="modal-box" style="border-color:#28a745;">
-            <h2 style="color:#28a745; margin-top:0;">🎁 Distribuir Tempo Extra</h2>
-            <div class="modal-opts">
-                <button class="btn-modal dist-option" onclick="handleSurplusDistribution('all')"><b>1. Distribuir Geral</b> <span>(Todas Prop.)</span></button>
-                <button class="btn-modal dist-option" onclick="handleSurplusDistribution('first')"><b>2. + 1ª Fase</b> <span id="lbl-first-phase" style="font-size:0.8em; color:#aaa;">(...)</span></button>
-                <button class="btn-modal dist-option" onclick="handleSurplusDistribution('last')"><b>3. + Última Fase</b> <span>(Fim)</span></button>
-                <button class="btn-modal dist-option" onclick="handleSurplusDistribution('flex')"><b>4. + Flexíveis</b> <span>(Apenas Flexíveis)</span></button>
+                <button class="btn-modal" style="background:var(--danger); color:white;" onclick="handleLateStart('first')"><b>🔪 Sacrificar 1ª Etapa</b> <span>(Reduzir Início)</span></button>
+                <button class="btn-modal" style="background:#007bff; color:white;" onclick="handleLateStart('flex')"><b>📉 Comprimir Flexíveis</b> <span>(Distribuir)</span></button>
+                <button class="btn-modal" style="background:var(--success); color:white;" onclick="handleLateStart('push')"><b>⏩ Mover Fim</b> <span>(Aceitar Atraso)</span></button>
             </div>
         </div>
     </div>
@@ -545,17 +533,13 @@
         function toggleIgnorarInicio() {
             const chk = document.getElementById('chk-ignorar-inicio');
             document.getElementById('hora-inicio').disabled = chk.checked;
-            // Desabilita botões dentro do grupo de início
             document.querySelectorAll('#group-inicio button').forEach(b => b.disabled = chk.checked);
         }
-        
         function toggleIgnorarFim() {
             const chk = document.getElementById('chk-ignorar-fim');
             document.getElementById('hora-fim').disabled = chk.checked;
-            // Desabilita botões dentro do grupo de fim
             document.querySelectorAll('#group-fim button').forEach(b => b.disabled = chk.checked);
         }
-
         function toggleIntervalosGlobais(){ const c = document.getElementById('chk-intervalos').checked; document.querySelectorAll('.fase-row').forEach(row => uiAtualizarFase(row)); }
         function toggleEstouroGlobal(){ const c = document.getElementById('chk-estouro-global').checked; document.querySelectorAll('.col-estouro').forEach(e => c ? e.classList.remove('hidden') : e.classList.add('hidden')); }
         function toggleAudioGlobal(){
@@ -580,8 +564,6 @@
             const dIni = new Date(dFim.getTime() - (dur * 60000));
             const now = new Date();
             if(dIni < new Date(now.getTime() - 60000)) {
-                // Se o cálculo sugere um início no passado, e não estamos ignorando o fim, é um conflito.
-                // Mas o botão só deve funcionar para ajustar os campos, a lógica de conflito real acontece no "Iniciar"
                 document.getElementById('hora-inicio').value = formatTime(dIni);
             } else {
                 document.getElementById('hora-inicio').value = formatTime(dIni);
@@ -658,7 +640,6 @@
                     });
                 });
                 
-                // SAVE IMAGE FILENAME
                 let imgName = row.dataset.imgname || "";
                 const imgInput = row.querySelector('.inp-img');
                 if(imgInput && imgInput.files.length > 0) {
@@ -728,10 +709,7 @@
             if (d.fases && d.fases.length > 0) {
                 d.fases.forEach(f => {
                     const isFlex = (f.flexivel !== undefined) ? f.flexivel : (f.redutivel || false);
-                    
-                    // LOAD IMAGE FILENAME
                     if (f.imgName) usesMedia = true;
-
                     const divWrapper = adicionarFase(f.titulo, f.minutos, isFlex, f.bg, f.txt, f.imgName || "");
                     const row = divWrapper.querySelector('.fase-row');
                     row.querySelector('.inp-int-tempo').value = f.intTempo || 0; 
@@ -784,48 +762,26 @@
                     return;
                 }
 
-                // 2. CHECAGEM DE TEMPO (Surplus/Deficit em relação ao Fim)
+                // 2. CHECAR SE TEMPO É INSUFICIENTE (Critico)
                 if (!ignorarF) {
                     const durationMin = obterDuracaoTotalMinutos();
                     const availableMin = (dataFimGlobal - now) / 60000;
                     const folga = Math.floor(availableMin - durationMin);
-                    
-                    // Se TEM FOLGA
-                    if (folga >= 1) {
-                        // Se IGNORAR INICIO está ativado, não pergunta, apenas inicia.
-                        if (ignorarI) {
-                            // Prossegue direto
-                        } else {
-                            // Se NÃO ignora início, pergunta o que fazer
-                            surplusMinutes = folga;
-                            document.getElementById('surplus-display-val').innerText = surplusMinutes;
-                            document.getElementById('modal-surplus-check').style.display = 'flex';
-                            return;
-                        }
-                    }
-                    
-                    // Se FALTA TEMPO (Deficit / Atraso Crítico de Fim)
-                    // Nota: Isso cobre o caso "iniciar com atraso em relação ao limite"
-                    if (folga < -1) { // Tolerancia de 1 min
-                         // Abre o modal de conflito de cálculo (já existente) que sugere comprimir
-                         // Mas precisamos popular os dados para ele funcionar
-                         // Na verdade, usamos o modal-conflito-calc para PRE-START
-                         // Vamos usar a lógica de "Late Start" adaptada para conflito de fim
-                         // Ou simplesmente alertar?
-                         // O usuário pediu: "Se houver atraso do previsto em relação ao limite, deve fazer as perguntas de ajuste"
+
+                    // Se falta tempo (Deficit) -> Atraso Crítico de Fim
+                    if (folga < -1) {
                          deficitSeconds = Math.abs(folga * 60);
-                         // Vamos usar o modal-late-start mas focado em reduzir flexiveis
                          document.getElementById('modal-late-start').style.display = 'flex';
                          return;
                     }
                 }
 
-                // 3. CHECAGEM ADIANTADO (EARLY START) em relação ao INICIO
-                // Só se NÃO ignora início
-                if (!ignorarI && now < dIni && !document.getElementById('modal-surplus-check').style.display.includes('flex')) {
-                    pendingDataInicio = dIni;
-                    document.getElementById('modal-early-start').style.display = 'flex';
-                    return;
+                // 3. CHECAGEM ADIANTADO (EARLY START) em relação ao INICIO PLANEJADO
+                // Apenas se NÃO estiver ignorando o início.
+                if (!ignorarI && now < dIni) {
+                     pendingDataInicio = dIni;
+                     document.getElementById('modal-early-start').style.display = 'flex';
+                     return;
                 }
 
                 // Se passou por tudo, inicia
@@ -940,11 +896,9 @@
                 const img = row.querySelector('.inp-img'); 
                 let url = "";
                 
-                // Prioridade 1: Arquivo recém selecionado no input
                 if (img.files[0]) {
                     url = URL.createObjectURL(img.files[0]);
                 } else {
-                    // Prioridade 2: Nome do arquivo salvo no dataset (via JSON)
                     const savedImgName = row.dataset.imgname;
                     if(savedImgName && mediaCache[savedImgName]) {
                         url = URL.createObjectURL(mediaCache[savedImgName]);
@@ -1007,7 +961,7 @@
             const ignorarF = document.getElementById('chk-ignorar-fim').checked;
             if (ignorarF) {
                 document.getElementById('lbl-fim-absoluto').innerText = "LIVRE";
-                document.getElementById('lbl-fim-previsto').parentElement.style.display = 'flex'; // VISÍVEL AGORA
+                document.getElementById('lbl-fim-previsto').parentElement.style.display = 'flex'; 
             } else {
                 document.getElementById('lbl-fim-absoluto').innerText = hF;
                 document.getElementById('lbl-fim-previsto').parentElement.style.display = 'flex';
@@ -1102,25 +1056,17 @@
         function atualizarPrevisaoEntrega() {
             let segundosTotais = 0;
             const globalInt = document.getElementById('chk-intervalos').checked;
-            
-            // Soma o restante da fase atual
             if (tempoRestante > 0) segundosTotais += tempoRestante;
-            
-            // Soma as fases futuras
             for (let i = indexAtual + 1; i < cronograma.length; i++) {
                 segundosTotais += cronograma[i].segundosFinais;
                 if (globalInt && cronograma[i-1]) { segundosTotais += cronograma[i-1].intSegundos; }
             }
-            
             const now = new Date();
             const previsao = new Date(now.getTime() + (segundosTotais * 1000));
             const h = String(previsao.getHours()).padStart(2,'0');
             const m = String(previsao.getMinutes()).padStart(2,'0');
-            
             const elPrev = document.getElementById('lbl-fim-previsto');
             elPrev.innerText = `${h}:${m}`;
-            
-            // Se tiver dataFimGlobal (Modo Fixo), compara cores. Se não (Modo Livre), sempre verde.
             if (dataFimGlobal) {
                 if (previsao > dataFimGlobal) elPrev.style.color = "#ff4444"; 
                 else elPrev.style.color = "#28a745";
