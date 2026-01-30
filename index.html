@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Cronos v1.363 - Versão Completa</title>
+    <title>Cronos v1.364 - Completo e Corrigido</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         :root { --accent: #00d2ff; --bg: #121212; --panel: #1e1e1e; --text: #e0e0e0; --success: #28a745; --warning: #ffaa00; --danger: #ff4444; }
@@ -280,41 +280,6 @@
         </div>
     </div>
 
-    <div id="modal-already-finished" class="modal-base">
-        <div class="modal-box" style="border-color: #ff4444;">
-            <h2 style="color: #ff4444; margin-top:0;">🚫 Horários Incompatíveis</h2>
-            <p>O horário de término programado já passou.</p>
-            <div class="modal-opts">
-                <button class="btn-modal" style="background:var(--warning); color:black;" onclick="handleFinishedEvent('ignore')"><b>🔓 IGNORAR HORÁRIOS</b> <span>(Modo Livre)</span></button>
-                <button class="btn-modal" style="background:#444;" onclick="handleFinishedEvent('cancel')"><b>✏️ AJUSTAR</b> <span>(Voltar)</span></button>
-            </div>
-        </div>
-    </div>
-
-    <div id="modal-conflito-calc" class="modal-base">
-        <div class="modal-box" style="border-color:#ffaa00;">
-            <h2 style="color:#ffaa00; margin-top:0;">⚠️ Tempo Insuficiente</h2>
-            <p>Para terminar no horário estipulado, o evento deveria ter começado no passado (<span id="span-hora-calc"></span>).</p>
-            <div class="modal-opts">
-                <button id="btn-distribuir-calc" class="btn-modal" style="background:#007bff; font-weight:bold;" onclick="resolverConflitoCalc(1)"><b>📉 DISTRIBUIR</b> (Comprimir Flexíveis)</button>
-                <button class="btn-modal" style="background:#28a745; color:white;" onclick="resolverConflitoCalc(2)"><b>🕓 AJUSTAR FIM</b> (Mover Fim para Frente)</button>
-                <button class="btn-modal" style="background:#444;" onclick="resolverConflitoCalc(0)">CANCELAR</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="modal-late-start" class="modal-base">
-        <div class="modal-box" style="border-color:#ff4444;">
-            <h2 style="color:#ff4444; margin-top:0;">⚠️ Tempo Insuficiente</h2>
-            <p>Não há tempo suficiente até o horário final.</p>
-            <div class="modal-opts">
-                <button class="btn-modal" style="background:var(--danger); color:white;" onclick="handleLateStart('first')"><b>🔪 Sacrificar 1ª Etapa</b> <span>(Reduzir Início)</span></button>
-                <button class="btn-modal" style="background:#007bff; color:white;" onclick="handleLateStart('flex')"><b>📉 Comprimir Flexíveis</b> <span>(Distribuir)</span></button>
-                <button class="btn-modal" style="background:var(--success); color:white;" onclick="handleLateStart('push')"><b>⏩ Mover Fim</b> <span>(Aceitar Atraso)</span></button>
-            </div>
-        </div>
-    </div>
-
     <div id="modal-surplus-check" class="modal-base">
         <div class="modal-box" style="border-color:#00d2ff;">
             <h2 style="color:#00d2ff; margin-top:0;">⏳ Tempo de Sobra Detectado</h2>
@@ -470,17 +435,16 @@
             
             activeAudio = {
                 audio: audio,
-                el: { customFlags: audObj } // Compatibility wrapper for tick logic
+                el: { customFlags: audObj } 
             };
         }
 
         function fadeAndStop(audRef, duration) {
             if(!audRef || !audRef.audio) return;
             const audio = audRef.audio;
-            // Simple fade out via interval
             let vol = 1;
             const step = 0.05;
-            const interval = 200; // ms
+            const interval = 200; 
             const fade = setInterval(() => {
                 if (vol > 0) {
                     vol -= step;
@@ -503,19 +467,17 @@
                 const min = parseFloat(row.querySelector('.inp-tempo').value) || 0;
                 const seg = Math.floor(min * 60);
                 
-                // Mapeia áudios
                 const customAudios = [];
                 wrapper.querySelectorAll('.audio-slot').forEach(slot => {
                     const m = parseInt(slot.querySelector('.aud-min').value) || 0;
                     const s = parseInt(slot.querySelector('.aud-sec').value) || 0;
-                    // Trigger: dispara quando faltar X segundos (contagem regressiva)
                     const triggerTime = (m * 60) + s; 
                     
                     const fName = slot.dataset.filename || (slot.querySelector('.aud-file').files[0] ? slot.querySelector('.aud-file').files[0].name : "");
 
                     if (fName) {
                         customAudios.push({
-                            trigger: triggerTime, // O tick compara tempoRestante === trigger
+                            trigger: triggerTime, 
                             fileName: fName,
                             loop: slot.querySelector('.aud-loop').checked,
                             stopAtZero: slot.querySelector('.aud-stopzero').checked
@@ -972,12 +934,13 @@
                 if (dataFimGlobal < dIni) dataFimGlobal.setDate(dataFimGlobal.getDate()+1);
             } else { dataFimGlobal = null; }
 
-            // CALCULAR ATRASO EM RELAÇÃO AO FIM
+            // 1. VERIFICAR ATRASO EM RELAÇÃO AO FIM
             if (!ignorarF) {
                 const durTotalMin = obterDuracaoTotalMinutos();
                 const tempoDispMin = (dataFimGlobal - now) / 60000;
                 const diferenca = tempoDispMin - durTotalMin; 
 
+                // SE ATRASADO (diferenca negativa maior que 1 min)
                 if (diferenca < -1) { 
                     deficitSeconds = Math.abs(diferenca * 60);
                     construirCronograma(); 
@@ -1000,15 +963,125 @@
                 }
             }
 
+            // 2. VERIFICAR INICIO ANTECIPADO (Start Check)
             if (!ignorarI && now < dIni) {
                 pendingDataInicio = dIni;
                 document.getElementById('modal-early-start').style.display = 'flex';
                 return;
             }
 
+            // 3. VERIFICAR SOBRA DE TEMPO (Surplus Check)
+            // Se chegou aqui, não está atrasado nem adiantado para o início.
+            // Mas pode ter tempo de sobra se o evento for curto para o tempo disponível.
+            if (!ignorarF) {
+                const durTotalMin = obterDuracaoTotalMinutos();
+                const tempoDispMin = (dataFimGlobal - now) / 60000;
+                const diferenca = tempoDispMin - durTotalMin; 
+                
+                if (diferenca > 2) { // Mais de 2 minutos de folga
+                    surplusMinutes = Math.floor(diferenca);
+                    document.getElementById('surplus-display-val').innerText = surplusMinutes;
+                    document.getElementById('modal-surplus-check').style.display = 'flex';
+                    return;
+                }
+            }
+
             ativarWakeLock();
             construirCronograma();
             rodarSistema(now);
+        }
+
+        // --- HANDLERS FALTANTES (Início Antecipado e Sobras) ---
+        function handleEarlyStart(decision) {
+            document.getElementById('modal-early-start').style.display = 'none';
+            if (decision === 'wait') {
+                // Ativar modo de espera
+                construirCronograma();
+                modoEspera(pendingDataInicio);
+            } else {
+                // Iniciar imediatamente (vai terminar mais cedo se não distribuir depois)
+                construirCronograma();
+                rodarSistema(new Date(), true); 
+            }
+        }
+
+        function modoEspera(targetDate) {
+            document.getElementById('config-screen').style.display='none';
+            document.getElementById('display-screen').style.display='flex';
+            document.querySelector('.controles-play').classList.add('hidden'); // Esconde controles
+            
+            document.getElementById('titulo-fase').innerText = "AGUARDANDO INÍCIO";
+            document.getElementById('titulo-fase').style.color = "#00d2ff";
+            document.getElementById('txt-status').innerText = "Em Espera";
+
+            if(intervaloTimer) clearInterval(intervaloTimer);
+            
+            intervaloTimer = setInterval(() => {
+                const now = new Date();
+                const diff = Math.ceil((targetDate - now)/1000);
+                
+                if(diff <= 0) {
+                    clearInterval(intervaloTimer);
+                    document.querySelector('.controles-play').classList.remove('hidden'); // Mostra controles
+                    tocarBip(600, 0.5);
+                    rodarSistema(new Date(), true); // Auto start
+                } else {
+                    const m = Math.floor(diff/60);
+                    const s = diff % 60;
+                    document.getElementById('timer-principal').innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                    document.getElementById('timer-principal').classList.add('timer-waiting');
+                }
+            }, 1000);
+        }
+
+        function handleSurplusDecision(decision) {
+            document.getElementById('modal-surplus-check').style.display = 'none';
+            const now = new Date();
+
+            if (decision === 'start') {
+                ativarWakeLock();
+                construirCronograma();
+                rodarSistema(now, true);
+            }
+            else if (decision === 'wait') {
+                // Aguarda o tempo da sobra antes de começar
+                const waitTime = new Date(now.getTime() + (surplusMinutes * 60000));
+                construirCronograma();
+                modoEspera(waitTime);
+            }
+            else if (decision === 'distribute') {
+                document.getElementById('modal-surplus-dist').style.display = 'flex';
+            }
+        }
+
+        function handleSurplusDistribution(type) {
+            document.getElementById('modal-surplus-dist').style.display = 'none';
+            ativarWakeLock();
+            construirCronograma();
+            const now = new Date();
+            const secondsToAdd = surplusMinutes * 60;
+
+            if (type === 'all') {
+                const perPhase = Math.floor(secondsToAdd / cronograma.length);
+                cronograma.forEach(f => f.segundosFinais += perPhase);
+            }
+            else if (type === 'first') {
+                cronograma[0].segundosFinais += secondsToAdd;
+            }
+            else if (type === 'last') {
+                cronograma[cronograma.length - 1].segundosFinais += secondsToAdd;
+            }
+            else if (type === 'flex') {
+                const flexPhases = cronograma.filter(f => f.flexivel);
+                if (flexPhases.length > 0) {
+                    const perPhase = Math.floor(secondsToAdd / flexPhases.length);
+                    cronograma.forEach(f => { if(f.flexivel) f.segundosFinais += perPhase; });
+                } else {
+                    alert("Nenhuma fase flexível encontrada. Adicionado à última.");
+                    cronograma[cronograma.length - 1].segundosFinais += secondsToAdd;
+                }
+            }
+            rodarSistema(now, true);
         }
 
         // --- HANDLERS DE ATRASO (STARTUP) ---
@@ -1228,6 +1301,7 @@
                 document.getElementById('lbl-fim-absoluto').innerText = hF;
                 document.getElementById('lbl-fim-previsto').parentElement.style.display = 'flex';
             }
+            document.querySelector('.controles-play').classList.remove('hidden');
             atualizarBotoes(false); indexAtual = 0; rodarFase(0);
         }
 
