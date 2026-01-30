@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Cronos v1.363 - Versão ES genérica</title>
+    <title>Cronos v1.363 - Versão Completa</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         :root { --accent: #00d2ff; --bg: #121212; --panel: #1e1e1e; --text: #e0e0e0; --success: #28a745; --warning: #ffaa00; --danger: #ff4444; }
@@ -439,13 +439,253 @@
             return totalMin;
         }
 
-        // --- 3. FUNÇÕES LÓGICAS ---
+        // --- 3. LÓGICA DE ÁUDIO E CORE DO SISTEMA ---
+        
+        function tocarBip(freq = 440, dur = 0.1, type = 'sine') {
+            try {
+                const ctx = getAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + dur);
+                osc.stop(ctx.currentTime + dur);
+            } catch(e) { console.log("Erro de Áudio"); }
+        }
+
+        function playSmartAudio(audObj) {
+            if (!mediaCache[audObj.fileName]) return;
+            // Interrompe anterior se houver
+            if (activeAudio) { activeAudio.audio.pause(); activeAudio = null; }
+            
+            const file = mediaCache[audObj.fileName];
+            const url = URL.createObjectURL(file);
+            const audio = new Audio(url);
+            
+            audio.loop = audObj.loop;
+            audio.play().catch(e => console.log("Erro play audio", e));
+            
+            activeAudio = {
+                audio: audio,
+                el: { customFlags: audObj } // Compatibility wrapper for tick logic
+            };
+        }
+
+        function fadeAndStop(audRef, duration) {
+            if(!audRef || !audRef.audio) return;
+            const audio = audRef.audio;
+            // Simple fade out via interval
+            let vol = 1;
+            const step = 0.05;
+            const interval = 200; // ms
+            const fade = setInterval(() => {
+                if (vol > 0) {
+                    vol -= step;
+                    audio.volume = Math.max(0, vol);
+                } else {
+                    clearInterval(fade);
+                    audio.pause();
+                    if(activeAudio === audRef) activeAudio = null;
+                }
+            }, interval);
+        }
+
+        function construirCronograma() {
+            cronograma = [];
+            const wrappers = document.querySelectorAll('.fase-wrapper');
+            if (wrappers.length === 0) return;
+
+            wrappers.forEach((wrapper, idx) => {
+                const row = wrapper.querySelector('.fase-row');
+                const min = parseFloat(row.querySelector('.inp-tempo').value) || 0;
+                const seg = Math.floor(min * 60);
+                
+                // Mapeia áudios
+                const customAudios = [];
+                wrapper.querySelectorAll('.audio-slot').forEach(slot => {
+                    const m = parseInt(slot.querySelector('.aud-min').value) || 0;
+                    const s = parseInt(slot.querySelector('.aud-sec').value) || 0;
+                    // Trigger: dispara quando faltar X segundos (contagem regressiva)
+                    const triggerTime = (m * 60) + s; 
+                    
+                    const fName = slot.dataset.filename || (slot.querySelector('.aud-file').files[0] ? slot.querySelector('.aud-file').files[0].name : "");
+
+                    if (fName) {
+                        customAudios.push({
+                            trigger: triggerTime, // O tick compara tempoRestante === trigger
+                            fileName: fName,
+                            loop: slot.querySelector('.aud-loop').checked,
+                            stopAtZero: slot.querySelector('.aud-stopzero').checked
+                        });
+                    }
+                });
+
+                cronograma.push({
+                    titulo: row.querySelector('.inp-titulo').value,
+                    segundosFinais: seg,
+                    minutosOrig: min,
+                    flexivel: row.querySelector('.inp-flexivel').checked,
+                    bg: row.querySelector('.inp-bg').value,
+                    txt: row.querySelector('.inp-txt').value,
+                    aviso: parseInt(row.querySelector('.inp-aviso').value) || 30,
+                    permitirEstouro: row.querySelector('.inp-estouro-fase').checked,
+                    imgName: row.dataset.imgname || null,
+                    customAudios: customAudios,
+                    temIntervalo: document.getElementById('chk-intervalos').checked,
+                    intTempo: parseFloat(row.querySelector('.inp-int-tempo').value) * 60 || 0,
+                    intManual: row.querySelector('.inp-int-manual').checked
+                });
+            });
+        }
+
+        function rodarFase(idx) {
+            if (intervaloTimer) clearInterval(intervaloTimer);
+            
+            if (idx >= cronograma.length) {
+                document.getElementById('lbl-fim').classList.add('ativo');
+                document.getElementById('timer-principal').innerHTML = "FIM";
+                document.getElementById('box-principal').style.backgroundColor = "#000";
+                document.getElementById('titulo-fase').innerText = "Encerrado";
+                tocarBip(880, 0.5, 'triangle'); 
+                return;
+            }
+
+            indexAtual = idx;
+            const fase = cronograma[idx];
+            tempoRestante = fase.segundosFinais;
+            estado = "RODANDO";
+            emIntervalo = false;
+
+            document.getElementById('titulo-fase').innerText = fase.titulo;
+            document.getElementById('titulo-fase').style.color = fase.txt;
+            
+            const display = document.getElementById('display-screen');
+            if (fase.imgName && mediaCache[fase.imgName]) {
+                const url = URL.createObjectURL(mediaCache[fase.imgName]);
+                display.style.backgroundImage = `url('${url}')`;
+            } else {
+                display.style.backgroundImage = 'none';
+                display.style.backgroundColor = fase.bg;
+            }
+
+            document.getElementById('box-principal').style.color = fase.txt;
+            
+            tick(); 
+            intervaloTimer = setInterval(tick, 1000);
+            atualizarBotoes(true);
+        }
+
+        function gerenciarIntervalo() {
+            const faseAnterior = cronograma[indexAtual];
+            if (!faseAnterior.temIntervalo || indexAtual >= cronograma.length - 1) {
+                rodarFase(indexAtual + 1);
+                return;
+            }
+
+            emIntervalo = true;
+            estado = "INTERVALO";
+            
+            document.getElementById('titulo-fase').innerText = "INTERVALO";
+            document.getElementById('box-principal').style.backgroundColor = "#222";
+            document.getElementById('display-screen').style.backgroundImage = "none";
+            document.getElementById('display-screen').style.backgroundColor = "#000";
+
+            if (faseAnterior.intManual) {
+                document.getElementById('timer-principal').innerText = "PAUSA";
+                document.getElementById('btn-intervalo-manual').classList.remove('hidden');
+                clearInterval(intervaloTimer);
+            } else {
+                tempoRestante = faseAnterior.intTempo;
+                intervaloTimer = setInterval(tick, 1000);
+            }
+        }
+
+        function sairIntervaloManual() {
+            document.getElementById('btn-intervalo-manual').classList.add('hidden');
+            rodarFase(indexAtual + 1);
+        }
+
+        function atualizarBotoes(rodando) {
+            if(rodando) {
+                document.getElementById('btn-pausar').classList.remove('hidden');
+                document.getElementById('btn-continuar').classList.add('hidden');
+            } else {
+                document.getElementById('btn-pausar').classList.add('hidden');
+                document.getElementById('btn-continuar').classList.remove('hidden');
+            }
+        }
+
+        function acaoPausar() {
+            if (intervaloTimer) clearInterval(intervaloTimer);
+            estado = "PAUSADO";
+            atualizarBotoes(false);
+            if (activeAudio) {
+                 document.getElementById('modal-audio-pause').style.display = 'flex';
+            }
+        }
+
+        function acaoContinuar() {
+            if (estado === "PAUSADO") {
+                estado = emIntervalo ? "INTERVALO" : "RODANDO";
+                intervaloTimer = setInterval(tick, 1000);
+                atualizarBotoes(true);
+                if (audioResumeAction === 'pause' && activeAudio) activeAudio.audio.play();
+                document.getElementById('modal-audio-pause').style.display = 'none';
+            }
+        }
+
+        function acaoAvançar() { rodarFase(indexAtual + 1); }
+        function acaoAdicionarTempo() { tempoRestante += 60; tick(); }
+        function acaoReiniciarFase() { rodarFase(indexAtual); }
+        function encerrar() {
+            if (intervaloTimer) clearInterval(intervaloTimer);
+            liberarWakeLock();
+            if (activeAudio) { activeAudio.audio.pause(); activeAudio = null; }
+            document.getElementById('display-screen').style.display = 'none';
+            document.getElementById('config-screen').style.display = 'block';
+            if (document.exitFullscreen) document.exitFullscreen();
+        }
+
+        function resolverAudioPause(action) {
+            audioResumeAction = action;
+            if (action === 'stop' && activeAudio) { activeAudio.audio.pause(); activeAudio = null; }
+            if (action === 'restart' && activeAudio) { activeAudio.audio.currentTime = 0; activeAudio.audio.play(); }
+            if (action === 'pause' && activeAudio) { activeAudio.audio.pause(); }
+            document.getElementById('modal-audio-pause').style.display = 'none';
+        }
+
+        function atualizarPrevisaoEntrega() {
+            let segundosFuturos = (tempoRestante > 0 ? tempoRestante : 0);
+            for(let i = indexAtual + 1; i < cronograma.length; i++) {
+                segundosFuturos += cronograma[i].segundosFinais;
+                if(cronograma[i].temIntervalo && !cronograma[i].intManual) {
+                     segundosFuturos += cronograma[i].intTempo;
+                }
+            }
+            const now = new Date();
+            const prev = new Date(now.getTime() + (segundosFuturos * 1000));
+            
+            const elPrev = document.getElementById('lbl-fim-previsto');
+            elPrev.innerText = formatTime(prev);
+
+            if (dataFimGlobal && prev > dataFimGlobal) elPrev.style.color = "#ff4444";
+            else elPrev.style.color = "#28a745";
+            
+            const elProx = document.getElementById('txt-proximo');
+            if (indexAtual + 1 < cronograma.length) elProx.innerText = "Próximo: " + cronograma[indexAtual + 1].titulo;
+            else elProx.innerText = "Próximo: Fim";
+        }
+
+        // --- 4. FUNÇÕES DOM (UI Builders) ---
         function recalcularOpcoesAudio(wrapper) {
             if (!wrapper) return;
             const slots = Array.from(wrapper.querySelectorAll('.audio-slot'));
             if (slots.length === 0) return;
             let minTime = Infinity; 
-            let lastSlot = null; // FIX: Variável declarada corretamente
+            let lastSlot = null; 
             
             slots.forEach(slot => {
                 const m = parseInt(slot.querySelector('.aud-min').value) || 0;
@@ -538,7 +778,6 @@
             document.querySelectorAll('.fase-row').forEach(row => verificarStatusMidia(row));
         }
 
-        // --- 4. FUNÇÕES DOM ---
         function adicionarSlotAudio(panel, min=0, sec=0, dur=0, loop=false, fin=5, fout=5, fname="", playThrough=false, stopZero=false, continueNext=false) {
             let list = panel;
             if (!panel.classList.contains('audio-list')) {
@@ -598,7 +837,7 @@
             return wrapper;
         }
 
-        // --- 5. CONTROLES UI ---
+        // --- 5. CONTROLES UI E OPÇÕES ---
         function toggleIgnorarInicio() {
             const chk = document.getElementById('chk-ignorar-inicio');
             document.getElementById('hora-inicio').disabled = chk.checked;
@@ -737,7 +976,7 @@
             if (!ignorarF) {
                 const durTotalMin = obterDuracaoTotalMinutos();
                 const tempoDispMin = (dataFimGlobal - now) / 60000;
-                const diferenca = tempoDispMin - durTotalMin; // FIX: Variáveis corretas
+                const diferenca = tempoDispMin - durTotalMin; 
 
                 if (diferenca < -1) { 
                     deficitSeconds = Math.abs(diferenca * 60);
@@ -752,12 +991,6 @@
                         document.getElementById('modal-severe-delay').style.display = 'flex';
                         return;
                     } 
-                    else if (delayMin > (firstPhaseMin / 2)) {
-                        document.getElementById('lbl-mod-1').innerText = `(${cronograma[0].titulo})`;
-                        document.getElementById('lbl-mod-4').innerText = `(${cronograma[cronograma.length-1].titulo})`;
-                        document.getElementById('modal-moderate-delay').style.display = 'flex';
-                        return;
-                    }
                     else {
                         document.getElementById('lbl-mod-1').innerText = `(${cronograma[0].titulo})`;
                         document.getElementById('lbl-mod-4').innerText = `(${cronograma[cronograma.length-1].titulo})`;
@@ -915,11 +1148,18 @@
         function tick() {
             if (estado !== "RODANDO" && estado !== "INTERVALO") return;
             atualizarPrevisaoEntrega();
+            
+            // Audio check
             if (estado === "RODANDO" && !emIntervalo && document.getElementById('chk-audio-global').checked) {
                 const fase = cronograma[indexAtual];
-                if (fase.customAudios) { fase.customAudios.forEach(aud => { if (aud.trigger === tempoRestante) playSmartAudio(aud); }); }
+                if (fase.customAudios) { 
+                    fase.customAudios.forEach(aud => { 
+                        if (aud.trigger === tempoRestante) playSmartAudio(aud); 
+                    }); 
+                }
             }
             if (tempoRestante === 0 && activeAudio && activeAudio.el.customFlags && activeAudio.el.customFlags.stopAtZero) { fadeAndStop(activeAudio, 2); }
+            
             tempoRestante--;
             
             const abs = Math.abs(tempoRestante); const m = Math.floor(abs / 60); const s = abs % 60; 
@@ -987,16 +1227,10 @@
             } else {
                 document.getElementById('lbl-fim-absoluto').innerText = hF;
                 document.getElementById('lbl-fim-previsto').parentElement.style.display = 'flex';
-                // SE FORCE START É TRUE, PULA A VALIDAÇÃO
-                if (!forceStart && dataFimGlobal) {
-                    const plan = cronograma.reduce((a,b)=>a+b.minutosOrig,0);
-                    const disp = (dataFimGlobal - now)/60000;
-                }
             }
             atualizarBotoes(false); indexAtual = 0; rodarFase(0);
         }
 
-        // Rest of standard functions...
         function resolverConflitoCalc(opt) { document.getElementById('modal-conflito-calc').style.display = 'none'; }
         
         window.onload = function() {
