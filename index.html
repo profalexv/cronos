@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Cronos v1.360 - Stable Fix</title>
+    <title>Cronos v1.361 - Final Fix</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         :root { --accent: #00d2ff; --bg: #121212; --panel: #1e1e1e; --text: #e0e0e0; --success: #28a745; --warning: #ffaa00; --danger: #ff4444; }
@@ -445,7 +445,7 @@
             const slots = Array.from(wrapper.querySelectorAll('.audio-slot'));
             if (slots.length === 0) return;
             let minTime = Infinity; 
-            let lastSlot = null; // --- CORREÇÃO DE SINTAXE (BUG FIX) ---
+            let lastSlot = null; // FIX: Variável declarada corretamente
             
             slots.forEach(slot => {
                 const m = parseInt(slot.querySelector('.aud-min').value) || 0;
@@ -631,12 +631,7 @@
             const dur = obterDuracaoTotalMinutos();
             const dFim = montarData(hF, new Date());
             const dIni = new Date(dFim.getTime() - (dur * 60000));
-            const now = new Date();
-            if(dIni < new Date(now.getTime() - 60000)) {
-                document.getElementById('hora-inicio').value = formatTime(dIni);
-            } else {
-                document.getElementById('hora-inicio').value = formatTime(dIni);
-            }
+            document.getElementById('hora-inicio').value = formatTime(dIni);
         }
 
         // --- 6. SALVAR / ABRIR ---
@@ -742,7 +737,7 @@
             if (!ignorarF) {
                 const durTotalMin = obterDuracaoTotalMinutos();
                 const tempoDispMin = (dataFimGlobal - now) / 60000;
-                const diferenca = tempoDispMin - durTotalMin; 
+                const diferenca = tempoDispMin - durTotalMin; // FIX: Variáveis corretas
 
                 if (diferenca < -1) { 
                     deficitSeconds = Math.abs(diferenca * 60);
