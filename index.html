@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Cronos v1.354 - Media Fix</title>
+    <title>Cronos v1.355 - Previsão Livre</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         :root { --accent: #00d2ff; --bg: #121212; --panel: #1e1e1e; --text: #e0e0e0; --success: #28a745; --warning: #ffaa00; --danger: #ff4444; }
@@ -457,7 +457,6 @@
         }
 
         function verificarStatusMidia(slot) {
-            // Verifica se é slot de áudio ou slot de imagem principal
             const isImageSlot = slot.classList.contains('fase-row');
             const label = slot.querySelector('.file-status');
             const fname = isImageSlot ? slot.dataset.imgname : slot.dataset.filename;
@@ -489,9 +488,7 @@
                 for (let file of input.files) { mediaCache[file.name] = file; count++; }
             }
             alert(`${count} arquivos mapeados!`);
-            // Refresh Audio Slots
             document.querySelectorAll('.audio-slot').forEach(slot => verificarStatusMidia(slot));
-            // Refresh Image Slots
             document.querySelectorAll('.fase-row').forEach(row => verificarStatusMidia(row));
         }
 
@@ -551,7 +548,6 @@
             audioPanel.innerHTML = `<div style="font-size:0.8rem; color:#aaa; margin-bottom:5px;">Configuração de Áudio Avançada</div><div class="audio-list"></div><button class="btn-add" style="padding:5px 10px; font-size:0.8rem;" onclick="adicionarSlotAudio(this.parentElement)">+ Novo Áudio</button>`;
             wrapper.appendChild(div); wrapper.appendChild(audioPanel); c.appendChild(wrapper); uiAtualizarFase(div);
             
-            // Check status immediately
             verificarStatusMidia(div);
             return wrapper;
         }
@@ -765,6 +761,9 @@
                 
                 if (usesMedia && Object.keys(mediaCache).length === 0) {
                      document.getElementById('modal-missing-media').style.display = 'flex';
+                } else if (Object.keys(mediaCache).length > 0) {
+                    document.querySelectorAll('.audio-slot').forEach(slot => verificarStatusMidia(slot));
+                    document.querySelectorAll('.fase-row').forEach(row => verificarStatusMidia(row));
                 }
             }
         }
@@ -998,7 +997,7 @@
             const ignorarF = document.getElementById('chk-ignorar-fim').checked;
             if (ignorarF) {
                 document.getElementById('lbl-fim-absoluto').innerText = "LIVRE";
-                document.getElementById('lbl-fim-previsto').parentElement.style.display = 'none';
+                document.getElementById('lbl-fim-previsto').parentElement.style.display = 'flex'; // VISÍVEL AGORA
             } else {
                 document.getElementById('lbl-fim-absoluto').innerText = hF;
                 document.getElementById('lbl-fim-previsto').parentElement.style.display = 'flex';
@@ -1091,21 +1090,33 @@
         }
 
         function atualizarPrevisaoEntrega() {
-            if (!dataFimGlobal) return; 
             let segundosTotais = 0;
             const globalInt = document.getElementById('chk-intervalos').checked;
+            
+            // Soma o restante da fase atual
             if (tempoRestante > 0) segundosTotais += tempoRestante;
+            
+            // Soma as fases futuras
             for (let i = indexAtual + 1; i < cronograma.length; i++) {
                 segundosTotais += cronograma[i].segundosFinais;
                 if (globalInt && cronograma[i-1]) { segundosTotais += cronograma[i-1].intSegundos; }
             }
+            
             const now = new Date();
             const previsao = new Date(now.getTime() + (segundosTotais * 1000));
             const h = String(previsao.getHours()).padStart(2,'0');
             const m = String(previsao.getMinutes()).padStart(2,'0');
+            
             const elPrev = document.getElementById('lbl-fim-previsto');
             elPrev.innerText = `${h}:${m}`;
-            if (previsao > dataFimGlobal) elPrev.style.color = "#ff4444"; else elPrev.style.color = "#28a745";
+            
+            // Se tiver dataFimGlobal (Modo Fixo), compara cores. Se não (Modo Livre), sempre verde.
+            if (dataFimGlobal) {
+                if (previsao > dataFimGlobal) elPrev.style.color = "#ff4444"; 
+                else elPrev.style.color = "#28a745";
+            } else {
+                elPrev.style.color = "#28a745"; 
+            }
         }
 
         function tick() {
