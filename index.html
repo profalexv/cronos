@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Cronos v1.364 - Completo e Corrigido</title>
+    <title>Cronos v1.364</title>
     <style>
         /* --- ESTILOS GERAIS --- */
         :root { --accent: #00d2ff; --bg: #121212; --panel: #1e1e1e; --text: #e0e0e0; --success: #28a745; --warning: #ffaa00; --danger: #ff4444; }
@@ -1322,7 +1322,8 @@
                 document.getElementById('hora-inicio').value = sVal;
                 document.getElementById('hora-fim').value = eVal;
                 
-                adicionarFase("Abertura", 10, true, "#ffcc00", "#ffffff");
+                adicionarFase("Confraternização", 10, true, "#ffcc00", "#ffffff");
+                adicionarFase("Missão", 15, true, "#288a2a", "#ffffff");
                 adicionarFase("Palestra Principal", 30, false, "#007bff", "#ffffff");
                 
                 setInterval(() => { document.getElementById('relogio-real').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }, 1000);
