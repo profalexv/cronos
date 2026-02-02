@@ -120,7 +120,7 @@ input[type="color"]::-webkit-color-swatch { border: none; }
 .piscando-vermelho { color: var(--danger) !important; animation: pulse-red 1s infinite; }
 @keyframes pulse-red { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); text-shadow: 0 0 20px red; } }
 .piscando-alerta-maximo { animation: flash-timer-panic 0.5s infinite; }
-@keyframes flash-timer-panic { 0%, 49% { color: var(--danger); transform: scale(1.05); } 50%, 100% { color: var(--txt-color); transform: scale(1); } }
+@keyframes flash-timer-panic { 0%, 49% { color: var(--danger); transform: scale(1.05); } 50%, 100% { color: var(--text); transform: scale(1); } }
 .bg-panic { animation: bg-flash 1s infinite; }
 @keyframes bg-flash { 0%, 100% { background-color: #300000; } 50% { background-color: #aa0000; } }
 @keyframes flash-strobe { 0%, 15% { opacity: 1; } 16%, 100% { opacity: 0; } }
