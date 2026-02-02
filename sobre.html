@@ -1,124 +1,38 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sobre o Projeto & Autor - Cronos</title>
-    <style>
-        /* --- ESTILO VISUAL (Identidade Cronos v1.54) --- */
-        :root {
-            --bg-color: #121212;
-            --surface-color: #1e1e1e;
-            --text-color: #e0e0e0;
-            --accent-color: #00d2ff;
-            --secondary-accent: #28a745;
-            --highlight-color: #2a2a2a;
-            --border-color: #444;
-        }
-
-        body {
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            line-height: 1.8;
-            display: flex;
-            justify-content: center;
-        }
-
-        .container {
-            max-width: 900px;
-            width: 100%;
-            padding: 40px 20px;
-        }
-
-        /* CABEÇALHO */
-        header {
-            text-align: center;
-            margin-bottom: 60px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 40px;
-        }
-
-        h1 {
-            color: var(--accent-color);
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .subtitle {
-            color: #888;
-            font-size: 1.1rem;
-            font-weight: 300;
-        }
-
-        /* SEÇÕES */
-        section {
-            margin-bottom: 60px;
-            background: var(--surface-color);
-            padding: 30px;
-            border-radius: 10px;
-            border-left: 5px solid var(--accent-color);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        }
-
-        h2 {
-            color: #fff;
-            margin-top: 0;
-            font-size: 1.8rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        p { margin-bottom: 20px; color: #ccc; }
-
-        /* LINKS E BOTÕES */
-        a {
-            color: var(--accent-color);
-            text-decoration: none;
-            transition: 0.3s;
-            border-bottom: 1px dashed var(--accent-color);
-        }
-        a:hover { color: #fff; border-bottom-style: solid; }
-
-        .btn-back {
-            display: inline-block;
-            background: transparent;
-            border: 1px solid var(--accent-color);
-            color: var(--accent-color);
-            padding: 10px 20px;
-            border-radius: 5px;
-            text-decoration: none;
-            font-weight: bold;
-            margin-top: 20px;
-            border-bottom: none;
-        }
-        .btn-back:hover {
-            background: var(--accent-color);
-            color: #000;
-        }
-
-        /* GRID DE DETALHES */
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-top: 20px;
-        }
-        .card {
-            background: var(--bg-color);
-            padding: 15px;
-            border-radius: 5px;
-            border: 1px solid var(--border-color);
-        }
-        .card strong { color: #fff; display: block; margin-bottom: 5px; }
-
-        /* RODAPÉ */
-        footer {
-            text-align: center;
+        <header style="text-align:center; margin-bottom:60px; border-bottom:1px solid #444; padding-bottom:40px;">
+            <h1 style="color:var(--accent); font-size:2.5rem; margin-bottom:10px; text-transform:uppercase; letter-spacing:2px;">Cronos</h1>
+            <div class="subtitle" style="color:#888; font-size:1.1rem; font-weight:300;">Sistema de Controle de Tempo e Etapas</div>
+        </header>
+        <section>
+            <h2 style="color:#fff; font-size:1.8rem; display:flex; align-items:center; gap:10px;">Sobre o Projeto</h2>
+            <p style="color:#ccc;">O Cronos foi desenvolvido para facilitar a gestão de eventos, reuniões e apresentações, permitindo controle preciso do tempo, etapas, intervalos e recursos multimídia. O sistema é flexível, intuitivo e pode ser personalizado conforme a necessidade do usuário.</p>
+        </section>
+        <section>
+            <h2 style="color:#fff; font-size:1.8rem; display:flex; align-items:center; gap:10px;">Funcionalidades</h2>
+            <ul style="color:#ccc;">
+                <li>Configuração de horários de início e fim</li>
+                <li>Adição de fases/etapas com tempo, cor, áudio e imagem</li>
+                <li>Intervalos automáticos ou manuais</li>
+                <li>Alertas visuais e sonoros</li>
+                <li>Salvamento e carregamento de cronogramas (JSON)</li>
+                <li>Interface responsiva e moderna</li>
+            </ul>
+        </section>
+        <section>
+            <h2 style="color:#fff; font-size:1.8rem; display:flex; align-items:center; gap:10px;">Autor</h2>
+            <p style="color:#ccc;">Desenvolvido por JL. Para dúvidas, sugestões ou contribuições, consulte o repositório no GitHub ou entre em contato pelo e-mail informado no README.</p>
+        </section>
+        <section>
+            <h2 style="color:#fff; font-size:1.8rem; display:flex; align-items:center; gap:10px;">Licença</h2>
+            <p style="color:#ccc;">Este projeto está sob a licença MIT. Consulte o arquivo LICENSE para mais detalhes.</p>
+        </section>
+        <footer>
+            <p>
+                &copy; 2026 Alexandre Vieira.<br>
+                <em>"Ensino, Tecnologia e Pensamento Crítico."</em>
+            </p>
+        </footer>
             margin-top: 80px;
             color: #555;
             font-size: 0.9rem;
