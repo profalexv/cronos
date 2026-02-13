@@ -574,7 +574,7 @@ window.onload = function() {
         
         adicionarFase("Confraternização", 10, true, "#ffcc00", "#ffffff");
         adicionarFase("Missão", 15, true, "#288a2a", "#ffffff");
-        adicionarFase("Palestra Principal", 30, false, "#007bff", "#ffffff");
+        adicionarFase("Lição", 30, false, "#007bff", "#ffffff");
         
         setInterval(() => { document.getElementById('relogio-real').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }, 1000);
     } catch (err) { alert("Erro de Inicialização JS: " + err.message); console.error(err); }
